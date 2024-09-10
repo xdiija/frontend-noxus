@@ -1,0 +1,242 @@
+<template>
+    <div class="q-pa-md">
+    <ViewHeader
+    :title="headerProps.title"
+    :btnTo="headerProps.btnTo"
+    :icon="headerProps.icon"
+    :btIcon="headerProps.btIcon"
+    :btnName="headerProps.btnName"
+    />
+        <q-form
+            @submit="onSubmit"
+            @reset="onReset"
+            class="row q-col-gutter-sm"
+        >
+            <q-input
+                outlined
+                v-model="form.name"
+                label="Nome"
+                lazy-rules
+                class="col-md-4 col-xs-12"
+                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
+            />
+            <q-input
+                outlined
+                v-model="form.email"
+                label="Email"
+                lazy-rules
+                class="col-md-4 col-xs-12"
+                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
+            />
+            <q-select
+                label="Perfil"
+                class="col-md-4 col-xs-12"
+                outlined
+                v-model="form.role"
+                :options="roles"
+                option-label="name"
+                emit-value
+                map-options
+            />
+            <q-input
+                outlined
+                label="Senha"
+                v-model="form.password"
+                lazy-rules
+                class="col-md-6 col-xs-12"
+                :type="form.isPwd ? 'password' : 'text'"
+                :rules="passwordRules"
+            >
+                <template v-slot:append>
+                    <q-icon
+                        :name="form.isPwd ? 'visibility_off' : 'visibility'"
+                        class="cursor-pointer"
+                        @click="form.isPwd = !form.isPwd"
+                    />
+                </template>
+            </q-input>
+            <q-input
+                outlined
+                label="Confirmação de Senha"
+                v-model="form.password_confirm"
+                lazy-rules
+                class="col-md-6 col-xs-12"
+                :type="form.isPwd ? 'password' : 'text'"
+                :rules="passwordConfirmRules"
+            >
+                <template v-slot:append>
+                    <q-icon
+                        :name="form.isPwd ? 'visibility_off' : 'visibility'"
+                        class="cursor-pointer"
+                        @click="form.isPwd = !form.isPwd"
+                    />
+                </template>
+            </q-input>
+            <div class="col-lg-12 col-xs-12">
+                <q-btn
+                    label="Salvar"
+                    type="submit"
+                    class="float-right"
+                    color="primary"
+                    icon="save"
+                />
+                <q-btn
+                    label="Limpar"
+                    type="reset"
+                    color="primary"
+                    class="float-right q-mr-sm"
+                    icon="clear"
+                    outline
+                />
+            </div>
+        </q-form>
+    </div>
+</template>
+
+<script>
+import { defineComponent, ref, onMounted, computed } from 'vue'
+import usersService from 'src/services/usersService'
+import rolesService from 'src/services/rolesService'
+import { useRouter, useRoute } from 'vue-router'
+import ViewHeader from 'components/ViewHeader.vue'
+import notifications from '../utils/notifications'
+
+const headerProps = {
+    title: '',
+    icon: 'manage_accounts',
+    btnTo: 'users',
+    btnName: 'Listar',
+    btIcon: 'list_alt'
+}
+
+export default defineComponent({
+    name: 'UsersForm',
+    components: {
+        ViewHeader
+    },
+    props: {
+        user: {
+            type: Object,
+            required: true
+        }
+    },
+    setup () {
+        const router = useRouter()
+        const route = useRoute()
+        const { post, getByID, update } = usersService()
+        const { notifySuccess, notifyError } = notifications()
+        const roles = ref([])
+        const form = ref({
+            isPwd: true,
+            name: null,
+            role: null,
+            email: null,
+            password: null,
+            password_confirm: null
+        })
+
+        const isEditMode = computed(() => !!route.params.id)
+        headerProps.title = isEditMode.value ? 'Editar Usuário' : 'Cadastrar Usuário'
+
+        const passwordRules = computed(() => [
+            val => isEditMode.value || (val && val.length > 0) || 'Campo Obrigatório!',
+            val => (isEditMode.value && !val) || val.length >= 6 || 'A senha deve ter pelo menos 6 caracteres'
+        ])
+
+        const passwordConfirmRules = computed(() => [
+            val => {
+                if (!isEditMode.value || form.value.password) {
+                    return (val && val === form.value.password) || 'As senhas não coincidem'
+                }
+                return true
+            }
+        ])
+
+        onMounted(async () => {
+            if (route.params.id) {
+                await getUser(route.params.id)
+            }
+            await getRoles()
+        })
+
+        const getRoles = async () => {
+            try {
+                const { list } = rolesService()
+                const { data } = await list()
+                roles.value = data.data
+            } catch (error) {
+                notifyError(error.response.data.message)
+            }
+        }
+
+        const getUser = async (id) => {
+            try {
+                const { data } = await getByID(id)
+                form.value = data.data
+                console.log(data)
+            } catch (error) {
+                notifyError(error.response.data.message)
+                router.push({ name: 'users' })
+            }
+        }
+
+        const updateUser = async () => {
+            try {
+                await update(makePayload())
+                notifySuccess('Usuário atualizado com sucesso!')
+                router.push({ name: 'users' })
+            } catch (error) {
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })
+            }
+        }
+
+        const newUser = async () => {
+            try {
+                await post(makePayload())
+                notifySuccess('Usuário criado com sucesso!')
+                router.push({ name: 'users' })
+            } catch (error) {
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })
+            }
+        }
+
+        const makePayload = () => {
+            const payload = {
+                id: form.value.id,
+                name: form.value.name,
+                role_id: form.value.role.id,
+                email: form.value.email
+            }
+            if (form.value.password) { payload.password = form.value.password }
+            return payload
+        }
+
+        const onSubmit = async () => {
+            form.value.id ? updateUser() : newUser()
+        }
+
+        return {
+            form,
+            onSubmit,
+            onReset () {
+                form.value = {
+                    isPwd: true,
+                    name: null,
+                    role: null,
+                    email: null,
+                    password: null,
+                    password_confirm: null
+                }
+            },
+            headerProps,
+            passwordRules,
+            passwordConfirmRules,
+            roles
+        }
+    }
+})
+</script>
