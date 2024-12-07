@@ -47,29 +47,36 @@
 
 <script>
 import authService from 'src/services/authService'
+import notifications from '../utils/notifications'
 
 export default {
     name: 'LoginPage',
     data () {
         return {
             login: {
-                email: 'teste@gmail.com',
-                password: '98753210',
+                email: 'test@example.com',
+                password: 'password',
                 isPwd: true
             }
         }
     },
     methods: {
         async onSubmit () {
-            const { post, setToken, setUser } = authService('login')
+            const { post, setToken, setUser, setMenus } = authService('login')
+            const { notifyError } = notifications()
             const userCredentials = { email: this.login.email, password: this.login.password }
             try {
-                const { data } = await post(userCredentials)
+                const { data } = await post(userCredentials)       
                 setToken(data.access_token)
                 setUser(data.user)
+                setMenus(data.menus)
                 this.$router.push({ name: 'home' })
             } catch (error) {
-                console.error('Login error:', error)
+                if (error.response.status === 401) {
+                    notifyError("Email ou senha incorretos.")
+                } else {
+                    notifyError("Erro ao efetuar login. Tente novamente.")
+                }
             }
         }
     }
