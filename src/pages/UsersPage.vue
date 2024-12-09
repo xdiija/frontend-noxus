@@ -19,15 +19,21 @@
                     icon="edit"
                     color="warning"
                     dense size="sm"
-                    @click="handleEditUser(props.row.id)"
-                />
+                    @click="handleEditUser(props.row.id)">
+                    <q-tooltip class="bg-accent">Editar</q-tooltip>
+                </q-btn>
                 <q-btn
-                    icon="delete"
-                    color="negative"
+                    :icon="props.row.status.name === 'Ativo' ? 'toggle_off' : 'toggle_on'"
+                    color="warning"
                     dense size="sm"
-                    @click="handleDeleteUser(props.row.id)"
-                />
+                    @click="handleChangeStatus(props.row.id)"
+                >
+                    <q-tooltip class="bg-accent">
+                        {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
+                    </q-tooltip>
+                </q-btn>
             </q-td>
+
         </template>
   </q-table>
 </div>
@@ -65,7 +71,7 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
-        const { list, remove } = usersService()
+        const { list, changeStatus } = usersService()
         const columns = [
             {
                 label: 'ID',
@@ -84,6 +90,13 @@ export default defineComponent({
             {
                 label: 'Email',
                 field: 'email',
+                name: 'email',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Status',
+                field: row => row.status.name,
                 name: 'email',
                 sortable: true,
                 align: 'left'
@@ -110,11 +123,12 @@ export default defineComponent({
             }
         }
 
-        const handleDeleteUser = async (id) => {
-            try {
+        const handleChangeStatus = async (id) => {
+            
+            try {             
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente apagar o registro?',
+                    message: 'Deseja realmente alterar o status do usuário?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'secondary',
@@ -127,8 +141,8 @@ export default defineComponent({
                     },
                     persistent: true
                 }).onOk(async () => {
-                    await remove(id)
-                    notifySuccess('Usuário removido com sucesso!')
+                    await changeStatus(id)
+                    notifySuccess('Status alterado com sucesso!')
                     await getUsers()
                 })
             } catch (error) {
@@ -146,7 +160,7 @@ export default defineComponent({
             headerProps,
             rows,
             columns,
-            handleDeleteUser,
+            handleChangeStatus,
             handleEditUser
         }
     }

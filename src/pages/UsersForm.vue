@@ -47,7 +47,6 @@
                 v-model="form.status"
                 :options="statusOptions"
                 option-label="name"
-                option-value="id"
                 emit-value
                 map-options
             />
@@ -211,6 +210,7 @@ export default defineComponent({
         }
 
         const newUser = async () => {
+            
             try {
                 await post(makePayload())
                 notifySuccess('Usuário criado com sucesso!')
@@ -222,7 +222,7 @@ export default defineComponent({
             }
         }
 
-        const makePayload = () => {
+        const makePayload = () => {            
             const payload = {
                 id: form.value.id,
                 name: form.value.name,
@@ -245,7 +245,8 @@ export default defineComponent({
                 form.value = {
                     isPwd: true,
                     name: null,
-                    role: null,
+                    roles: [],
+                    status: null,
                     email: null,
                     password: null,
                     password_confirm: null
