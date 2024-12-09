@@ -72,7 +72,9 @@ export default {
                 setMenus(data.menus)
                 this.$router.push({ name: 'home' })
             } catch (error) {
-                if(error.code = 'ERR_NETWORK'){
+                console.log(error);
+                
+                if(error.code == 'ERR_NETWORK'){
                     notifyError("Erro de conexão com o servidor. Tente novamente mais tarde.")
                 }else if (error.response.status === 401) {
                     notifyError("Email ou senha incorretos.")

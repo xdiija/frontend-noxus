@@ -17,8 +17,8 @@ export default function useApi(url) {
         return await api.put(`${url}/${reqData.id}`, reqData)
     }
 
-    const remove = async (id) => {
-        return await api.delete(`${url}/${id}`)
+    const changeStatus = async (id) => {
+        return await api.put(`${url}/${id}/status`)
     }
 
     return {
@@ -26,6 +26,6 @@ export default function useApi(url) {
         getByID,
         post,
         update,
-        remove
+        changeStatus
     }
 }
