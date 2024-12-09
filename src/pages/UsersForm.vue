@@ -17,7 +17,7 @@
                 v-model="form.name"
                 label="Nome"
                 lazy-rules
-                class="col-md-4 col-xs-12"
+                class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
             <q-input
@@ -25,16 +25,29 @@
                 v-model="form.email"
                 label="Email"
                 lazy-rules
-                class="col-md-4 col-xs-12"
+                class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
             <q-select
                 label="Perfil"
-                class="col-md-4 col-xs-12"
+                class="col-md-6 col-xs-12"
                 outlined
-                v-model="form.role"
+                v-model="form.roles"
                 :options="roles"
                 option-label="name"
+                option-value="id"
+                emit-value
+                map-options
+                multiple
+            />
+            <q-select
+                label="Status"
+                class="col-md-6 col-xs-12"
+                outlined
+                v-model="form.status"
+                :options="statusOptions"
+                option-label="name"
+                option-value="id"
                 emit-value
                 map-options
             />
@@ -126,10 +139,14 @@ export default defineComponent({
         const { post, getByID, update } = usersService()
         const { notifySuccess, notifyError } = notifications()
         const roles = ref([])
+        const statusOptions = [
+            { id: 0, name: 'Inativo' },
+            { id: 1, name: 'Ativo' }
+        ];
         const form = ref({
             isPwd: true,
             name: null,
-            role: null,
+            roles: [],
             email: null,
             password: null,
             password_confirm: null
@@ -172,8 +189,9 @@ export default defineComponent({
         const getUser = async (id) => {
             try {
                 const { data } = await getByID(id)
+                const userData = data.data;
+                userData.roles = userData.roles.map(role => role.id)
                 form.value = data.data
-                console.log(data)
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: 'users' })
@@ -208,9 +226,10 @@ export default defineComponent({
             const payload = {
                 id: form.value.id,
                 name: form.value.name,
-                role_id: form.value.role.id,
-                email: form.value.email
-            }
+                roles: form.value.roles,
+                email: form.value.email,
+                status: form.value.status.id
+            }            
             if (form.value.password) { payload.password = form.value.password }
             return payload
         }
@@ -235,7 +254,8 @@ export default defineComponent({
             headerProps,
             passwordRules,
             passwordConfirmRules,
-            roles
+            roles,
+            statusOptions
         }
     }
 })
