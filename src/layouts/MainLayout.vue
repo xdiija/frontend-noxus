@@ -50,49 +50,6 @@ import EssentialLink from 'components/EssentialLink.vue'
 import authService from 'src/services/authService'
 import { useRouter } from 'vue-router'
 
-const linksList = [
-    {
-        title: 'Início',
-        level: 0,
-        caption: '',
-        icon: 'home',
-        route: '/',
-        children: []
-    },
-    {
-        title: 'Administrativo',
-        level: 0,
-        caption: '',
-        icon: 'admin_panel_settings',
-        children: [
-            {
-                title: 'Usuários',
-                level: 1,
-                caption: '',
-                icon: 'manage_accounts',
-                route: '/users',
-                children: []
-            },
-            {
-                title: 'Perfis',
-                level: 1,
-                caption: '',
-                icon: 'groups',
-                route: '/profiles',
-                children: []
-            }
-        ]
-    },
-    {
-        title: 'Logout',
-        level: 0,
-        caption: '',
-        icon: 'exit_to_app',
-        route: '/login',
-        children: []
-    }
-]
-
 export default defineComponent({
     name: 'MainLayout',
 
@@ -103,7 +60,7 @@ export default defineComponent({
     setup () {
         const router = useRouter()
         const leftDrawerOpen = ref(false)
-        const { getUser, clearAuth } = authService()
+        const { getUser, getMenus, clearAuth } = authService()
         const handleLinkClick = (route) => {
             if (route === 'login') {
                 clearAuth()
@@ -111,9 +68,38 @@ export default defineComponent({
             }
         }
 
+        const prepareMenus = () => {
+			const feMenus = []
+			const beMenus = getMenus();
+			
+			beMenus.forEach(menu => {
+				let feMenu = {
+					title: menu.name,
+					level: 0,
+					caption: '',
+					icon: menu.icon,
+					route: menu.route,
+					children: []
+				}
+				menu.children.forEach(childMenu => {
+					let feChildMenu = {
+						title: childMenu.name,
+						level: 1,
+						caption: '',
+						icon: childMenu.icon,
+						route: childMenu.route,
+						children: []
+					}
+					feMenu.children.push(feChildMenu)
+				})
+				feMenus.push(feMenu)
+			});
+			return feMenus
+        }
+
         return {
             user: getUser(),
-            essentialLinks: linksList,
+            essentialLinks: prepareMenus(),
             leftDrawerOpen,
             toggleLeftDrawer () {
                 leftDrawerOpen.value = !leftDrawerOpen.value

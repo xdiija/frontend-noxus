@@ -2,7 +2,7 @@
   <q-page class="flex flex-center">
     <q-card style="width: 300px; height: auto; display: flex; flex-direction: column; align-items: center;">
       <img src="../assets/noxusLogoGreen.png">
-      <form>
+      <form @keydown.enter.prevent="onSubmit">
         <q-card-section class="q-pt-none full-width">
             <q-input
                 filled
@@ -54,8 +54,8 @@ export default {
     data () {
         return {
             login: {
-                email: 'test@example.com',
-                password: 'password',
+                email: 'djalma@example.com',
+                password: '12345678',
                 isPwd: true
             }
         }
@@ -72,7 +72,9 @@ export default {
                 setMenus(data.menus)
                 this.$router.push({ name: 'home' })
             } catch (error) {
-                if (error.response.status === 401) {
+                if(error.code = 'ERR_NETWORK'){
+                    notifyError("Erro de conexão com o servidor. Tente novamente mais tarde.")
+                }else if (error.response.status === 401) {
                     notifyError("Email ou senha incorretos.")
                 } else {
                     notifyError("Erro ao efetuar login. Tente novamente.")
