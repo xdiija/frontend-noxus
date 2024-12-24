@@ -1,33 +1,30 @@
 <template>
     <div class="q-pa-md">
-        <router-view />
-        <ViewHeader
-            :title="headerProps.title"
-            :btnTo="headerProps.btnTo"
-            :icon="headerProps.icon"
-            :btIcon="headerProps.btIcon"
-            :btnName="headerProps.btnName"
-        />
-        <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="name"
-        >
+    <router-view />
+    <ViewHeader
+        :title="headerProps.title"
+        :btnTo="headerProps.btnTo"
+        :icon="headerProps.icon"
+        :btIcon="headerProps.btIcon"
+        :btnName="headerProps.btnName"
+    />
+        <q-table :rows="rows" :columns="columns" row-key="name">
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         icon="edit"
                         color="warning"
                         dense size="sm"
-                        @click="handleEditUser(props.row.id)">
-                        <q-tooltip class="bg-accent">Editar</q-tooltip>
+                        @click="handleEditRoles(props.row.id)">
+                        <q-tooltip class="bg-accent">
+                            Editar
+                        </q-tooltip>
                     </q-btn>
                     <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         color="warning"
                         dense size="sm"
-                        @click="handleChangeStatus(props.row.id)"
-                    >
+                        @click="handleChangeStatus(props.row.id)">
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
@@ -41,25 +38,23 @@
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
-import usersService from 'src/services/usersService'
+import rolesService from 'src/services/rolesService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 
 const headerProps = {
-    title: 'Usuários',
-    icon: 'manage_accounts',
-    btnTo: 'usersForm',
+    title: 'Perfis',
+    icon: 'groups',
+    btnTo: 'rolesForm',
     btnName: 'Adicionar',
     btIcon: 'add'
 }
 
 export default defineComponent({
-    name: 'UsersPage',
-    components: {
-        ViewHeader
-    },
+    name: 'RolesPage',
+    components: { ViewHeader },
     props: {
         user: {
             type: Object,
@@ -71,7 +66,7 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
-        const { list, changeStatus } = usersService()
+        const { list, changeStatus } = rolesService()
         const columns = [
             {
                 label: 'ID',
@@ -84,13 +79,6 @@ export default defineComponent({
                 label: 'Nome',
                 field: 'name',
                 name: 'name',
-                sortable: true,
-                align: 'left'
-            },
-            {
-                label: 'Email',
-                field: 'email',
-                name: 'email',
                 sortable: true,
                 align: 'left'
             },
@@ -110,10 +98,10 @@ export default defineComponent({
         ]
 
         onMounted(() => {
-            getUsers()
+            getRoles()
         })
 
-        const getUsers = async () => {
+        const getRoles = async () => {
             try {
                 const { data } = await list()
                 rows.value = data.data
@@ -128,7 +116,7 @@ export default defineComponent({
             try {             
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente alterar o status do usuário?',
+                    message: 'Deseja realmente alterar o status do perfil?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'secondary',
@@ -143,7 +131,7 @@ export default defineComponent({
                 }).onOk(async () => {
                     await changeStatus(id)
                     notifySuccess('Status alterado com sucesso!')
-                    await getUsers()
+                    await getRoles()
                 })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
@@ -152,8 +140,8 @@ export default defineComponent({
             }
         }
 
-        const handleEditUser = (id) => {
-            router.push({ name: 'usersForm', params: { id } })
+        const handleEditRoles = (id) => {
+            router.push({ name: 'rolesForm', params: { id } })
         }
 
         return {
@@ -161,7 +149,7 @@ export default defineComponent({
             rows,
             columns,
             handleChangeStatus,
-            handleEditUser
+            handleEditRoles
         }
     }
 })

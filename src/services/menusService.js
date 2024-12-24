@@ -1,7 +1,7 @@
 import useApi from 'src/composables/UseApi'
 
-export default function rolesService() {
-    const { list, getByID, post, update, changeStatus } = useApi('roles')
+export default function menusService() {
+    const { list, getByID, post, update, changeStatus } = useApi('menus')
 
     return {
         list,

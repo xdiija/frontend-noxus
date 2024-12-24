@@ -1,47 +1,39 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-        <q-space />
-        <q-toolbar-title>
-            Noxus Sistemas
-        </q-toolbar-title>
-        <q-space />
-      </q-toolbar>
-    </q-header>
-
-    <q-drawer
-      v-model="leftDrawerOpen"
-      bordered
-    >
-      <q-list>
-        <q-item-label
-          header
-        >
-          Menus
-        </q-item-label>
-
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-          @link-click="handleLinkClick"
-        />
-      </q-list>
-    </q-drawer>
-
-    <q-page-container>
-        <router-view :user="user"/>
-    </q-page-container>
-  </q-layout>
+	<q-layout view="lHh Lpr lFf">
+    	<q-header elevated>
+      		<q-toolbar>
+				<q-btn
+					flat
+					dense
+					round
+					icon="menu"
+					aria-label="Menu"
+					@click="toggleLeftDrawer"
+				/>
+        		<q-space />
+				<q-toolbar-title>
+					Noxus Sistemas
+				</q-toolbar-title>
+        		<q-space />
+      		</q-toolbar>
+    	</q-header>
+    	<q-drawer v-model="leftDrawerOpen" bordered >
+      		<q-list>
+				<q-item-label header >
+					Menus
+				</q-item-label>
+				<EssentialLink
+					v-for="link in essentialLinks"
+					:key="link.title"
+					v-bind="link"
+					@link-click="handleLinkClick"
+				/>
+      		</q-list>
+    	</q-drawer>
+		<q-page-container>
+			<router-view :user="user"/>
+		</q-page-container>
+	</q-layout>
 </template>
 
 <script>
@@ -68,34 +60,40 @@ export default defineComponent({
             }
         }
 
-        const prepareMenus = () => {
-			const feMenus = []
-			const beMenus = getMenus();
+    	const prepareMenus = () => {
+			const links = [
+				newLink({name: "Início", icon: "home", route: "/"}, 0)
+			]
+			const menus = getMenus();
 			
-			beMenus.forEach(menu => {
-				let feMenu = {
-					title: menu.name,
-					level: 0,
-					caption: '',
-					icon: menu.icon,
-					route: menu.route,
-					children: []
-				}
+			menus.forEach(menu => {
+	
+				const link = newLink(menu , 0)
+
 				menu.children.forEach(childMenu => {
-					let feChildMenu = {
-						title: childMenu.name,
-						level: 1,
-						caption: '',
-						icon: childMenu.icon,
-						route: childMenu.route,
-						children: []
-					}
-					feMenu.children.push(feChildMenu)
+					const childLink = newLink(childMenu , 1)
+					link.children.push(childLink)
 				})
-				feMenus.push(feMenu)
+
+				links.push(link)
 			});
-			return feMenus
+
+			links.push(newLink({name: "Logout", icon: "exit_to_app", route: "/login"}, 0))
+			
+			return links
         }
+
+		const newLink = (menu, level) => {
+			
+			return {
+				title: menu.name,
+				level: level,
+				caption: '',
+				icon: menu.icon,
+				route: menu.route,
+				children: []
+			}
+		}
 
         return {
             user: getUser(),
@@ -104,7 +102,8 @@ export default defineComponent({
             toggleLeftDrawer () {
                 leftDrawerOpen.value = !leftDrawerOpen.value
             },
-            handleLinkClick
+            handleLinkClick,
+			newLink
         }
     }
 })

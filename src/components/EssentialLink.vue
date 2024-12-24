@@ -7,17 +7,10 @@
                 :to="route"
                 :inset-level="level"
                 exact
-                @click="handleClick"
-                >
-                <q-item-section
-                    v-if="icon"
-                    avatar
-                >
-                    <q-icon
-                    :name="icon"
-                />
+                @click="handleClick">
+                <q-item-section v-if="icon" avatar>
+                    <q-icon :name="icon"/>
                 </q-item-section>
-
                 <q-item-section>
                     <q-item-label>{{ title }}</q-item-label>
                     <q-item-label caption>{{ caption }}</q-item-label>
@@ -32,22 +25,16 @@
                     :label="title"
                     :caption="caption"
                     :header-inset-level="level"
-                    default-closed
-                >
-                <EssentialLink
-                    v-for="child in children"
-                    :key="child"
-                    v-bind="child"
-                >
-                </EssentialLink>
+                    default-closed>
+                    <EssentialLink
+                        v-for="child in children"
+                        :key="child"
+                        v-bind="child">
+                    </EssentialLink>
                 </q-expansion-item>
             </div>
             <div v-else>
-                <q-item
-                    clickable
-                    v-ripple
-                    :inset-level="level"
-                >
+                <q-item clickable v-ripple :inset-level="level">
                 <q-item-section>{{title}}</q-item-section>
                 </q-item>
             </div>
