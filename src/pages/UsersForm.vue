@@ -2,14 +2,10 @@
     <div class="q-pa-md">
     <ViewHeader
     :title="headerProps.title"
-    :btnTo="headerProps.btnTo"
     :icon="headerProps.icon"
-    :btIcon="headerProps.btIcon"
-    :btnName="headerProps.btnName"
     />
         <q-form
             @submit="onSubmit"
-            @reset="onReset"
             class="row q-col-gutter-sm"
         >
             <q-input
@@ -39,16 +35,18 @@
                 emit-value
                 map-options
                 multiple
+                :rules="[val => !!val || 'Campo Obrigatório!']"
             />
             <q-select
                 label="Status"
                 class="col-md-6 col-xs-12"
                 outlined
                 v-model="form.status"
-                :options="statusOptions"
+                :options="activeInactive"
                 option-label="name"
                 emit-value
                 map-options
+                :rules="[val => !!val || 'Campo Obrigatório!']"
             />
             <q-input
                 outlined
@@ -93,11 +91,11 @@
                     icon="save"
                 />
                 <q-btn
-                    label="Limpar"
-                    type="reset"
+                    label="Sair"
                     color="primary"
                     class="float-right q-mr-sm"
-                    icon="clear"
+                    icon="arrow_back"
+                    :to="{ name: 'users' }"
                     outline
                 />
             </div>
@@ -112,39 +110,30 @@ import rolesService from 'src/services/rolesService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import { activeInactive } from 'src/constants/statusOptions';
 
 const headerProps = {
     title: '',
-    icon: 'manage_accounts',
-    btnTo: 'users',
-    btnName: 'Listar',
-    btIcon: 'list_alt'
+    icon: 'manage_accounts'
 }
 
 export default defineComponent({
     name: 'UsersForm',
-    components: {
-        ViewHeader
-    },
+    components: { ViewHeader },
     props: {
-        user: {
-            type: Object,
-            required: true
-        }
+        user: { type: Object, required: true}
     },
     setup () {
         const router = useRouter()
         const route = useRoute()
         const { post, getByID, update } = usersService()
         const { notifySuccess, notifyError } = notifications()
+
         const roles = ref([])
-        const statusOptions = [
-            { id: 0, name: 'Inativo' },
-            { id: 1, name: 'Ativo' }
-        ];
         const form = ref({
             isPwd: true,
             name: null,
+            status: null,
             roles: [],
             email: null,
             password: null,
@@ -222,7 +211,7 @@ export default defineComponent({
             }
         }
 
-        const makePayload = () => {            
+        const makePayload = () => {                      
             const payload = {
                 id: form.value.id,
                 name: form.value.name,
@@ -256,7 +245,7 @@ export default defineComponent({
             passwordRules,
             passwordConfirmRules,
             roles,
-            statusOptions
+            activeInactive
         }
     }
 })

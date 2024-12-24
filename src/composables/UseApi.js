@@ -1,8 +1,8 @@
 import { api } from 'boot/axios'
 
 export default function useApi(url) {
-    const list = async () => {
-        return await api.get(url)
+    const list = async (complement = "") => {
+        return await api.get(`${url}${complement}`)
     }
 
     const getByID = async (id) => {
@@ -13,8 +13,8 @@ export default function useApi(url) {
         return await api.post(url, reqData)
     }
 
-    const update = async (reqData) => {
-        return await api.put(`${url}/${reqData.id}`, reqData)
+    const update = async (reqData, id) => {
+        return await api.put(`${url}/${id}`, reqData)
     }
 
     const changeStatus = async (id) => {
