@@ -1,8 +1,10 @@
 <template>
     <div class="q-pa-md">
     <ViewHeader
-    :title="headerProps.title"
-    :icon="headerProps.icon"
+        :title="headerProps.title"
+        :btnTo="headerProps.btnTo"
+        :btnIcon="headerProps.btnIcon"
+        :btnName="headerProps.btnName"
     />
         <q-form
             @submit="onSubmit"
@@ -114,7 +116,9 @@ import { activeInactive } from 'src/constants/statusOptions';
 
 const headerProps = {
     title: '',
-    icon: 'manage_accounts'
+    btnIcon: 'format_list_numbered',
+    btnName: 'Listar',
+    btnTo: 'users'
 }
 
 export default defineComponent({
@@ -188,7 +192,7 @@ export default defineComponent({
 
         const updateUser = async () => {
             try {
-                await update(makePayload())
+                await update(makePayload(), form.value.id)
                 notifySuccess('Usuário atualizado com sucesso!')
                 router.push({ name: 'users' })
             } catch (error) {
@@ -213,7 +217,6 @@ export default defineComponent({
 
         const makePayload = () => {                      
             const payload = {
-                id: form.value.id,
                 name: form.value.name,
                 roles: form.value.roles,
                 email: form.value.email,

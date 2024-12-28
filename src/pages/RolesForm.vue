@@ -1,8 +1,10 @@
 <template>
     <div class="q-pa-md">
         <ViewHeader
-        :title="headerProps.title"
-        :icon="headerProps.icon"
+            :title="headerProps.title"
+            :btnTo="headerProps.btnTo"
+            :btnIcon="headerProps.btnIcon"
+            :btnName="headerProps.btnName"
         />
         <q-form
             @submit="onSubmit"
@@ -117,7 +119,9 @@ import { activeInactive } from 'src/constants/statusOptions';
 
 const headerProps = {
     title: '',
-    icon: 'manage_accounts'
+    btnIcon: 'format_list_numbered',
+    btnName: 'Listar',
+    btnTo: 'roles'
 }
 
 export default defineComponent({
@@ -268,7 +272,7 @@ export default defineComponent({
 
         const getRole = async (id) => {
             try {
-                const { data } = await getByID(id)
+                const { data } = await getByID(id, "?show_permissions=1")
                 const roleData = data.data;
                 form.value = {
                     ...roleData,

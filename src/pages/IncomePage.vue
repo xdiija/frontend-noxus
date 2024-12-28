@@ -93,7 +93,6 @@ export default defineComponent({
             try {
                 const { data } = await list()
                 rows.value = data
-                console.log(data)
             } catch (error) {
                 console.error(error)
             }

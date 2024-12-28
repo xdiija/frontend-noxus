@@ -40,6 +40,16 @@ const routes = [
                 path: 'roles-form/:id?',
                 name: 'rolesForm',
                 component: () => import('src/pages/RolesForm.vue')
+            },
+            {
+                path: 'menus',
+                name: 'menus',
+                component: () => import('src/pages/MenusPage.vue')
+            },
+            {
+                path: 'menus-form/:id?',
+                name: 'menusForm',
+                component: () => import('src/pages/MenusForm.vue')
             }
         ]
     },

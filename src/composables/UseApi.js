@@ -5,8 +5,8 @@ export default function useApi(url) {
         return await api.get(`${url}${complement}`)
     }
 
-    const getByID = async (id) => {
-        return await api.get(`${url}/${id}`)
+    const getByID = async (id, queryParams = "") => {
+        return await api.get(`${url}/${id}${queryParams}`)
     }
 
     const post = async (reqData) => {

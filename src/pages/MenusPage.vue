@@ -14,7 +14,7 @@
                         icon="edit"
                         color="warning"
                         dense size="sm"
-                        @click="handleEditRoles(props.row.id)">
+                        @click="handleEditMenu(props.row.id)">
                         <q-tooltip class="bg-accent">
                             Editar
                         </q-tooltip>
@@ -37,21 +37,21 @@
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
-import rolesService from 'src/services/rolesService'
+import menusService from 'src/services/menusService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 
 const headerProps = {
-    title: 'Perfis',
-    btnTo: 'rolesForm',
+    title: 'Menus',
+    btnTo: 'menusForm',
     btnIcon: 'add',
     btnName: 'Adicionar'
 }
 
 export default defineComponent({
-    name: 'RolesPage',
+    name: 'MenusPage',
     components: { ViewHeader },
     props: {
         user: {
@@ -64,7 +64,7 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
-        const { list, changeStatus } = rolesService()
+        const { list, changeStatus } = menusService()
         const columns = [
             {
                 label: 'ID',
@@ -77,6 +77,36 @@ export default defineComponent({
                 label: 'Nome',
                 field: 'name',
                 name: 'name',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Rota',
+                field: 'route',
+                field: row => (row.route && row.route != "") ? row.route : '-',
+                name: 'route',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Ícone',
+                field: 'icon',
+                name: 'icon',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Menu Pai',
+                field: row => (row.parent && row.parent.name) ? row.parent.name : '-',
+                name: 'parent',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Exclusivo Noxus',
+                field: 'exclusive_noxus',
+                field: row => row.exclusive_noxus ? 'Sim' : 'Não',
+                name: 'parent',
                 sortable: true,
                 align: 'left'
             },
@@ -96,10 +126,10 @@ export default defineComponent({
         ]
 
         onMounted(() => {
-            getRoles()
+            getMenus()
         })
 
-        const getRoles = async () => {
+        const getMenus = async () => {
             try {
                 const { data } = await list()
                 rows.value = data.data
@@ -113,7 +143,7 @@ export default defineComponent({
             try {             
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente alterar o status do perfil?',
+                    message: 'Deseja realmente alterar o status do menu?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'secondary',
@@ -128,7 +158,7 @@ export default defineComponent({
                 }).onOk(async () => {
                     await changeStatus(id)
                     notifySuccess('Status alterado com sucesso!')
-                    await getRoles()
+                    await getMenus()
                 })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
@@ -137,8 +167,8 @@ export default defineComponent({
             }
         }
 
-        const handleEditRoles = (id) => {
-            router.push({ name: 'rolesForm', params: { id } })
+        const handleEditMenu = (id) => {
+            router.push({ name: 'menusForm', params: { id } })
         }
 
         return {
@@ -146,7 +176,7 @@ export default defineComponent({
             rows,
             columns,
             handleChangeStatus,
-            handleEditRoles
+            handleEditMenu
         }
     }
 })

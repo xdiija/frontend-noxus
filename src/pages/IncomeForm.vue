@@ -99,7 +99,6 @@ export default defineComponent({
             try {
                 const res = await getByID(id)
                 form.value = res.data
-                console.log(res.data)
             } catch (error) {
                 console.erro(error)
             }
@@ -108,7 +107,6 @@ export default defineComponent({
         const updateIncome = async () => {
             try {
                 const res = await update(form.value)
-                console.log(res.data)
                 notifyAndRedirect()
             } catch (error) {
                 console.erro(error)
@@ -118,7 +116,6 @@ export default defineComponent({
         const newIncome = async () => {
             try {
                 const res = await post(form.value)
-                console.log(res)
                 notifyAndRedirect()
             } catch (error) {
                 console.erro(error)
