@@ -4,8 +4,7 @@
         <ViewHeader
             :title="headerProps.title"
             :btnTo="headerProps.btnTo"
-            :icon="headerProps.icon"
-            :btIcon="headerProps.btIcon"
+            :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
         <q-table
@@ -49,10 +48,9 @@ import notifications from '../utils/notifications'
 
 const headerProps = {
     title: 'Usuários',
-    icon: 'manage_accounts',
     btnTo: 'usersForm',
-    btnName: 'Adicionar',
-    btIcon: 'add'
+    btnIcon: 'add',
+    btnName: 'Adicionar'
 }
 
 export default defineComponent({
@@ -117,7 +115,6 @@ export default defineComponent({
             try {
                 const { data } = await list()
                 rows.value = data.data
-                console.log(data) // Usar data.meta para paginação
             } catch (error) {
                 console.log(error)
             }

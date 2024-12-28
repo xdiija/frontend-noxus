@@ -71,9 +71,7 @@ export default {
                 setUser(data.user)
                 setMenus(data.menus)
                 this.$router.push({ name: 'home' })
-            } catch (error) {
-                console.log(error);
-                
+            } catch (error) {                
                 if(error.code == 'ERR_NETWORK'){
                     notifyError("Erro de conexão com o servidor. Tente novamente mais tarde.")
                 }else if (error.response.status === 401) {

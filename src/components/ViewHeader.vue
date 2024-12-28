@@ -2,17 +2,11 @@
     <header class="app-header">
         <div>
             <span class="text-h5">
-                <q-icon
-                    :name="icon"
-                    class="header-icon"
-                    v-if="icon"
-                />
                 {{ title }}
             </span>
             <q-btn
-                v-if="btnName"
                 color="primary"
-                :icon="btIcon"
+                :icon="btnIcon"
                 :label="btnName"
                 :to="{ name: btnTo }"
             />
@@ -37,11 +31,7 @@ export default defineComponent({
             type: String,
             default: ''
         },
-        icon: {
-            type: String,
-            default: ''
-        },
-        btIcon: {
+        btnIcon: {
             type: String,
             default: ''
         }
