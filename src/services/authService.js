@@ -2,16 +2,25 @@ import { ref, computed } from 'vue'
 import useApi from 'src/composables/UseApi'
 
 const token = ref(localStorage.getItem('token') || null)
+const tokenRefreshTime = ref(localStorage.getItem('refresh_time') || null)
 const user = ref(JSON.parse(localStorage.getItem('user')) || null)
 const menus = ref(JSON.parse(localStorage.getItem('menus')) || [])
 
 export default function authService(url = '') {
     const { post } = useApi(`auth/${url}`)
-    const meApi = useApi('auth/me')
+    const meApi = useApi('auth/me');
+    const refreshApi = useApi('auth/refresh');
 
-    function setToken(tokenValue) {
+    function setToken(tokenValue, expiresInSeconds) {
         localStorage.setItem('token', tokenValue)
         token.value = tokenValue
+
+        const expiresInMinutes = expiresInSeconds / 60;
+        const halfExpiresInMinutes = expiresInMinutes / 2;
+        const refreshTime = new Date();
+        refreshTime.setMinutes(refreshTime.getMinutes() + Math.floor(halfExpiresInMinutes));
+        localStorage.setItem('refresh_time', refreshTime)
+        tokenRefreshTime.value = refreshTime
     }
 
     function setUser(userValue) {
@@ -48,16 +57,19 @@ export default function authService(url = '') {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         localStorage.removeItem('menus')
+        localStorage.removeItem('refresh_time')
         token.value = null
         user.value = null
         menus.value = null
+        tokenRefreshTime.value = null
     }
 
     async function verifyToken() {
-        if (!token.value) return false
+        if (!token.value) return false;
 
         try {
             await meApi.post()
+            await refreshToken()
             return true
         } catch (error) {
             clearAuth()
@@ -65,19 +77,30 @@ export default function authService(url = '') {
         }
     }
 
+    async function refreshToken() {
+        const currentDateTime = new Date();
+
+        if (currentDateTime >= tokenRefreshTime.value) {
+            const { data } = await refreshApi.post();
+            setToken(data.access_token, data.expires_in);
+        }
+    }
+
     return {
-        post,
+        isAuthenticated,
+        userName,
+        userID,
+        tokenRefreshTime,
         token,
         user,
+        post,
         setToken,
         setUser,
         getUser,
         getMenus,
         setMenus,
-        isAuthenticated,
-        userName,
-        userID,
         clearAuth,
-        verifyToken
+        verifyToken,
+        refreshToken
     }
 }

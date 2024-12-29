@@ -54,8 +54,8 @@ export default {
     data () {
         return {
             login: {
-                email: 'djalma@example.com',
-                password: '12345678',
+                email: 'admin@example.com',
+                password: '123456',
                 isPwd: true
             }
         }
@@ -67,7 +67,7 @@ export default {
             const userCredentials = { email: this.login.email, password: this.login.password }
             try {
                 const { data } = await post(userCredentials)       
-                setToken(data.access_token)
+                setToken(data.access_token, data.expires_in)
                 setUser(data.user)
                 setMenus(data.menus)
                 this.$router.push({ name: 'home' })
