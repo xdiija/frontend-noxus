@@ -14,17 +14,19 @@ export default route(function (/* { store, ssrContext } */) {
         history: createHistory(process.env.VUE_ROUTER_BASE)
     })
 
-    // Add navigation guard to check authentication
     Router.beforeEach(async (to, from, next) => {
-        const auth = authService() // Initialize authService
 
         if (to.matched.some(record => record.meta.requiresAuth)) {
+            const auth = authService()
+
             if (!auth.isAuthenticated.value) {
-                next({ name: 'login' }) // Redirect to login page if not authenticated
+                next({ name: 'login' })
+
             } else {
                 const tokenValid = await auth.verifyToken()
+
                 if (!tokenValid) {
-                    next({ name: 'login' }) // Redirect to login page if token is invalid
+                    next({ name: 'login' })
                 } else {
                     next()
                 }
