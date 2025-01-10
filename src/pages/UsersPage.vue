@@ -10,8 +10,20 @@
         <q-table
             :rows="rows"
             :columns="columns"
-            row-key="name"
+            row-key="id"
+            :filter="filter"
+            v-model:pagination="pagination"
+            :loading="loading"
+            :rows-per-page-options="[5, 10, 20]"
+            @request="onRequest"
         >
+        <template v-slot:top-right>
+            <q-input dense debounce="300" v-model="filter" placeholder="Busca">
+            <template v-slot:append>
+                <q-icon name="search" />
+            </template>
+            </q-input>
+        </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
@@ -69,6 +81,13 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
+        const filter = ref('');
+        const loading = ref(false);
+        const pagination = ref({
+            page: 1,
+            rowsPerPage: 5,
+            rowsNumber: 0
+        });
         const { list, changeStatus } = usersService()
         const columns = [
             {
@@ -107,18 +126,39 @@ export default defineComponent({
             }
         ]
 
+        const onRequest = (params) => {
+            const { page, rowsPerPage } = params.pagination;
+            pagination.value.page = page;
+            pagination.value.rowsPerPage = rowsPerPage;
+            getUsers();
+        };
+
+        const getUsers = async () => {
+            loading.value = true;
+
+            
+            try {
+                const params = {
+                    page: pagination.value.page,
+                    per_page: pagination.value.rowsPerPage,
+                    filter: filter.value
+                };
+
+                const { data } = await list("", params);
+                
+                rows.value = data.data;
+                pagination.value.rowsNumber = data.meta.total;
+            } catch (error) {
+                console.error(error);
+                notifyError('Erro ao carregar os usuários.');
+            } finally {
+                loading.value = false;
+            }
+        }
+
         onMounted(() => {
             getUsers()
         })
-
-        const getUsers = async () => {
-            try {
-                const { data } = await list()
-                rows.value = data.data
-            } catch (error) {
-                console.log(error)
-            }
-        }
 
         const handleChangeStatus = async (id) => {
             
@@ -158,7 +198,11 @@ export default defineComponent({
             rows,
             columns,
             handleChangeStatus,
-            handleEditUser
+            handleEditUser,
+            filter,
+            loading,
+            pagination,
+            onRequest
         }
     }
 })

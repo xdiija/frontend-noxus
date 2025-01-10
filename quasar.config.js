@@ -95,11 +95,10 @@ module.exports = configure(function (ctx) {
 
         // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
         framework: {
+            lang: 'pt-BR',
             config: {},
 
             // iconSet: 'material-icons', // Quasar icon set
-            // lang: 'en-US', // Quasar language pack
-
             // For special cases outside of where the auto-import strategy can have an impact
             // (like functional components as one of the examples),
             // you can manually specify Quasar components/directives to be available everywhere:
@@ -185,7 +184,7 @@ module.exports = configure(function (ctx) {
             bundler: 'packager', // 'packager' or 'builder'
 
             packager: {
-            // https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#options
+                // https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#options
 
                 // OS X / Mac App Store
                 // appBundleId: '',
@@ -193,12 +192,12 @@ module.exports = configure(function (ctx) {
                 // osxSign: '',
                 // protocol: 'myapp://path',
 
-            // Windows only
-            // win32metadata: { ... }
+                // Windows only
+                // win32metadata: { ... }
             },
 
             builder: {
-            // https://www.electron.build/configuration/configuration
+                // https://www.electron.build/configuration/configuration
 
                 appId: 'Noxus'
             }
