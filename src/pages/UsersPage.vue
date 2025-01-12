@@ -27,21 +27,30 @@
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
-                        icon="edit"
-                        color="warning"
-                        dense size="sm"
-                        @click="handleEditUser(props.row.id)">
-                        <q-tooltip class="bg-accent">Editar</q-tooltip>
-                    </q-btn>
-                    <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
-                        color="warning"
+                        :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
                         @click="handleChangeStatus(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="edit"
+                        color="warning"
+                        dense size="sm"
+                        @click="handleEditUser(props.row.id)"
+                    >
+                        <q-tooltip class="bg-accent">Editar</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="delete"
+                        color="negative"
+                        dense size="sm"
+                        @click="handleDestroy(props.row.id)"
+                    >
+                        <q-tooltip class="bg-accent">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
 
@@ -88,7 +97,7 @@ export default defineComponent({
             rowsPerPage: 5,
             rowsNumber: 0
         });
-        const { list, changeStatus } = usersService()
+        const { list, changeStatus, destroy } = usersService()
         const columns = [
             {
                 label: 'ID',
@@ -168,13 +177,12 @@ export default defineComponent({
                     message: 'Deseja realmente alterar o status do usuário?',
                     cancel: {
                         label: 'Cancelar',
-                        color: 'secondary',
-                        textColor: 'primary'
+                        color: 'primary',
+                        outline: true 
                     },
                     ok: {
                         label: 'Confirmar',
                         color: 'primary',
-                        textColor: 'secondary'
                     },
                     persistent: true
                 }).onOk(async () => {
@@ -193,16 +201,50 @@ export default defineComponent({
             router.push({ name: 'usersForm', params: { id } })
         }
 
+        const handleDestroy = async (id) => {
+            try {
+                $q.dialog({
+                    title: 'Confirmação',
+                    message: 'Deseja realmente excluir o registro?',
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true 
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary',
+                    },
+                    persistent: true
+                }).onOk(async () => {
+                    await destroy(id)
+                    $q.notify({
+                        message: `Registro ${id} removido!`,
+                        icon: 'check',
+                        color: 'primary'
+                    })
+                    await getUsers()
+                })
+            } catch (error) {
+                $q.notify({
+                    message: 'Erro ao excluir registro!',
+                    icon: 'times',
+                    color: 'negative'
+                })
+            }
+        }
+
         return {
             headerProps,
             rows,
             columns,
-            handleChangeStatus,
-            handleEditUser,
             filter,
             loading,
             pagination,
-            onRequest
+            onRequest,
+            handleChangeStatus,
+            handleEditUser,
+            handleDestroy
         }
     }
 })

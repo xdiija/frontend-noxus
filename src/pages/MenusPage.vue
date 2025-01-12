@@ -11,22 +11,31 @@
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
-                        icon="edit"
-                        color="warning"
-                        dense size="sm"
-                        @click="handleEditMenu(props.row.id)">
-                        <q-tooltip class="bg-accent">
-                            Editar
-                        </q-tooltip>
-                    </q-btn>
-                    <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
-                        color="warning"
+                        :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
                         @click="handleChangeStatus(props.row.id)">
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="edit"
+                        color="warning"
+                        dense size="sm"
+                        @click="handleEditMenu(props.row.id)"
+                    >
+                        <q-tooltip class="bg-accent">
+                            Editar
+                        </q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="delete"
+                        color="negative"
+                        dense size="sm"
+                        @click="handleDestroy(props.row.id)"
+                    >
+                        <q-tooltip class="bg-accent">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
 
@@ -64,7 +73,7 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
-        const { list, changeStatus } = menusService()
+        const { list, changeStatus, destroy } = menusService()
         const columns = [
             {
                 label: 'ID',
@@ -146,13 +155,12 @@ export default defineComponent({
                     message: 'Deseja realmente alterar o status do menu?',
                     cancel: {
                         label: 'Cancelar',
-                        color: 'secondary',
-                        textColor: 'primary'
+                        color: 'primary',
+                        outline: true 
                     },
                     ok: {
                         label: 'Confirmar',
                         color: 'primary',
-                        textColor: 'secondary'
                     },
                     persistent: true
                 }).onOk(async () => {
@@ -171,12 +179,46 @@ export default defineComponent({
             router.push({ name: 'menusForm', params: { id } })
         }
 
+        const handleDestroy = async (id) => {
+            try {
+                $q.dialog({
+                    title: 'Confirmação',
+                    message: 'Deseja realmente excluir o registro?',
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true 
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary',
+                    },
+                    persistent: true
+                }).onOk(async () => {
+                    await destroy(id)
+                    $q.notify({
+                        message: `Registro ${id} removido!`,
+                        icon: 'check',
+                        color: 'positive'
+                    })
+                    await getMenus()
+                })
+            } catch (error) {
+                $q.notify({
+                    message: 'Erro ao excluir registro!',
+                    icon: 'times',
+                    color: 'negative'
+                })
+            }
+        }
+
         return {
             headerProps,
             rows,
             columns,
             handleChangeStatus,
-            handleEditMenu
+            handleEditMenu,
+            handleDestroy
         }
     }
 })
