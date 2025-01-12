@@ -1,7 +1,7 @@
 import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
-import authService from 'src/services/authService' // Adjust this path based on your project structure
+import authService from 'src/services/authService'
 
 export default route(function (/* { store, ssrContext } */) {
     const createHistory = process.env.SERVER

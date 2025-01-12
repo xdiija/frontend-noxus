@@ -57,6 +57,7 @@
                 lazy-rules
                 class="col-md-6 col-xs-12"
                 :type="form.isPwd ? 'password' : 'text'"
+                autocomplete="nova-senha"
                 :rules="passwordRules"
             >
                 <template v-slot:append>
@@ -74,6 +75,7 @@
                 lazy-rules
                 class="col-md-6 col-xs-12"
                 :type="form.isPwd ? 'password' : 'text'"
+                autocomplete="nova-senha"
                 :rules="passwordConfirmRules"
             >
                 <template v-slot:append>

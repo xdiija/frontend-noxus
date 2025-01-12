@@ -69,7 +69,6 @@ export default function authService(url = '') {
 
         try {
             await meApi.post()
-            await refreshToken()
             return true
         } catch (error) {
             clearAuth()
@@ -84,6 +83,8 @@ export default function authService(url = '') {
             const { data } = await refreshApi.post();
             setToken(data.access_token, data.expires_in);
         }
+
+        return true;
     }
 
     return {
