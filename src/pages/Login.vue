@@ -14,9 +14,9 @@
                 class="q-mt-sm"
                 v-model="login.password"
                 filled
-                label="Password"
+                label="Senha"
                 :type="login.isPwd ? 'password' : 'text'"
-                autocomplete="current-password"
+                autocomplete="senha-atual"
             >
                 <template v-slot:append>
                 <q-icon
@@ -74,9 +74,10 @@ export default {
             } catch (error) {                
                 if(error.code == 'ERR_NETWORK'){
                     notifyError("Erro de conexão com o servidor. Tente novamente mais tarde.")
-                }else if (error.response.status === 401) {
+                }else if (error.response && error.response.status === 401) {
                     notifyError("Email ou senha incorretos.")
                 } else {
+                    console.error(error)
                     notifyError("Erro ao efetuar login. Tente novamente.")
                 }
             }
