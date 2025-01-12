@@ -3,28 +3,34 @@ import authService from 'src/services/authService'
 
 export default function useApi(url) {
     const list = async (endPoint = "", queryParams = {}) => {
-        await refreshToken(url)
+        await refreshToken(url);
         queryParams = buildQueryParams(queryParams)
         return await api.get(`${url}${endPoint}${queryParams}`)
     }
 
     const getByID = async (id, queryParams = "") => {
-        await refreshToken(url)
+        await refreshToken(url);
         return await api.get(`${url}/${id}${queryParams}`)
     }
 
     const post = async (reqData) => {
-        await refreshToken(url)
+        await refreshToken(url);
         return await api.post(url, reqData)
     }
 
     const update = async (reqData, id) => {
-        await refreshToken(url)
+        await refreshToken(url);
         return await api.put(`${url}/${id}`, reqData)
     }
 
     const changeStatus = async (id) => {
+        await refreshToken(url);
         return await api.put(`${url}/${id}/status`)
+    }
+
+    const destroy = async (id) => {
+        await refreshToken(url);
+        return await api.delete(`${url}/${id}`)
     }
 
     const buildQueryParams = (objParams) => {
@@ -57,6 +63,7 @@ export default function useApi(url) {
         getByID,
         post,
         update,
-        changeStatus
+        changeStatus,
+        destroy
     }
 }
