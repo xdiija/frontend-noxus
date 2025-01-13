@@ -173,7 +173,7 @@ export default defineComponent({
         const getRoles = async () => {
             try {
                 const { list } = rolesService()
-                const { data } = await list()
+                const { data } = await list("/getactive")
                 roles.value = data.data
             } catch (error) {
                 notifyError(error.response.data.message)
