@@ -58,8 +58,8 @@ const routes = [
             },
             {
                 path: 'customers-form/:id?',
-                name: 'costumersForm',
-                component: () => import('src/pages/ConstumersForm.vue')
+                name: 'customersForm',
+                component: () => import('src/pages/CustomersForm.vue')
             }
 
         ]
