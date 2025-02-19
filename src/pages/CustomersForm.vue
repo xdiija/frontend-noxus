@@ -29,14 +29,14 @@
             />
             <q-input
                 outlined
-                v-model="form.phone1"
+                v-model="form.phone_1"
                 label="Telefone 1"
                 class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length >= 10 || 'Telefone inválido!']"
             />
             <q-input
                 outlined
-                v-model="form.phone2"
+                v-model="form.phone_2"
                 label="Telefone 2 (Opcional)"
                 class="col-md-6 col-xs-12"
             />
@@ -81,6 +81,7 @@ import notifications from '../utils/notifications'
 import { activeInactive } from 'src/constants/statusOptions'
 
 const listRoute = 'customers'
+
 const headerProps = {
     title: '',
     btnIcon: 'format_list_numbered',
@@ -98,11 +99,11 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
 
         const form = ref({
-            name: null,
-            email: null,
-            phone1: null,
-            phone2: null,
-            status: null
+            name: '',
+            email: '',
+            phone_1: '',
+            phone_2: '',
+            status: ''
         })
 
         const customers = ref([])
