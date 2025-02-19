@@ -46,11 +46,13 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
+                option-value="value"
                 option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
             />
+
             <div class="col-lg-12 col-xs-12">
                 <q-btn
                     label="Salvar"
@@ -119,7 +121,14 @@ export default defineComponent({
         })
 
         const onSubmit = async () => {
-            form.value.id ? updateCustomer() : createCustomer()
+            const customerData = {
+                ...form.value,
+                status: convertStatus(form.value.status) // Converte antes de enviar
+            }
+
+            console.log('Enviando dados para API:', customerData)
+
+            customerData.id ? updateCustomer(customerData) : createCustomer(customerData)
         }
 
         const getCustomer = async (id) => {
@@ -132,20 +141,20 @@ export default defineComponent({
             }
         }
 
-        const updateCustomer = async () => {
+        const createCustomer = async (customerData) => {
             try {
-                await update(form.value, form.value.id)
-                notifySuccess('Cliente atualizado com sucesso!')
+                await post(customerData)
+                notifySuccess('Cliente cadastrado com sucesso!')
                 router.push({ name: listRoute })
             } catch (error) {
                 notifyError(error.response.data.message)
             }
         }
 
-        const createCustomer = async () => {
+        const updateCustomer = async (customerData) => {
             try {
-                await post(form.value)
-                notifySuccess('Cliente cadastrado com sucesso!')
+                await update(customerData, customerData.id)
+                notifySuccess('Cliente atualizado com sucesso!')
                 router.push({ name: listRoute })
             } catch (error) {
                 notifyError(error.response.data.message)
@@ -161,13 +170,21 @@ export default defineComponent({
             }
         }
 
+        // Aqui converte o tipo Ativo ou Inativo para 1 ou 2 para o back
+
+        const convertStatus = (status) => {
+            console.log('Valor recebido em status:', status)
+            return status.name === 'Ativo' ? 1 : 2
+        }
+
         return {
             form,
             onSubmit,
             headerProps,
             activeInactive,
             listRoute,
-            customers
+            customers,
+            convertStatus
         }
     }
 })
