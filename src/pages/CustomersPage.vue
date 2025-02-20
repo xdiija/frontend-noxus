@@ -94,8 +94,15 @@ export default defineComponent({
                 $q.dialog({
                     title: 'Confirmação',
                     message: 'Deseja realmente alterar o status do cliente?',
-                    cancel: { label: 'Cancelar', color: 'primary', outline: true },
-                    ok: { label: 'Confirmar', color: 'primary' },
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary'
+                    },
                     persistent: true
                 }).onOk(async () => {
                     await changeStatus(id)
@@ -129,13 +136,19 @@ export default defineComponent({
             }
         }
 
+        const convertStatus = (status) => {
+            console.log('Valor recebido em status:', status)
+            return status.name === 'Ativo' ? 1 : 2
+        }
+
         return {
             headerProps,
             rows,
             columns,
             handleChangeStatusCustomer,
             handleEditCustomer,
-            handleDestroyCustomer
+            handleDestroyCustomer,
+            convertStatus
         }
     }
 })
