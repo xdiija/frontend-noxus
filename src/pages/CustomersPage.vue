@@ -72,7 +72,8 @@ export default defineComponent({
             { label: 'Email', field: 'email', name: 'email', sortable: true, align: 'left' },
             { label: 'Fone 1', field: 'phone_1', name: 'phone_1', sortable: true, align: 'left' },
             { label: 'Fone 2', field: 'phone_2', name: 'phone_2', sortable: true, align: 'left' },
-            { label: 'Status', field: row => row.status.name, name: 'status', sortable: true, align: 'left' }
+            { label: 'Status', field: row => row.status.name, name: 'status', sortable: true, align: 'left' },
+            { label: 'Ações', field: 'actions', name: 'actions', align: 'right' }
         ]
 
         onMounted(() => {
