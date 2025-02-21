@@ -8,6 +8,13 @@
             :btnName="headerProps.btnName"
         />
         <q-table :rows="rows" :columns="columns" row-key="id">
+            <template v-slot:top-right>
+            <q-input dense debounce="300" v-model="filter" placeholder="Busca">
+            <template v-slot:append>
+                <q-icon name="search" />
+            </template>
+            </q-input>
+        </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
@@ -118,11 +125,11 @@ export default defineComponent({
             router.push({ name: 'customersForm', params: { id } })
         }
 
-        const handleDestroyCustomer = async (id) => {
+        const handleDestroyCustomer = async (id, name) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente excluir este cliente?',
+                    message: 'Deseja mesmo excluir este cliente? Não prefere inativa-lo?',
                     cancel: { label: 'Cancelar', color: 'primary', outline: true },
                     ok: { label: 'Confirmar', color: 'primary' },
                     persistent: true
