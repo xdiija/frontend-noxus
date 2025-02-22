@@ -139,7 +139,7 @@ export default defineComponent({
                     await getCustomers()
                 })
             } catch (error) {
-                notifyError('Erro ao excluir cliente!')
+                notifyError('Erro ao excluir clienteee!')
             }
         }
 
