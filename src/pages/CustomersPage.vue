@@ -7,14 +7,30 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
-        <q-table :rows="rows" :columns="columns" row-key="id">
+        <q-table
+            :rows="rows"
+            :columns="columns"
+            row-key="id"
+            :filter="filter"
+            v-model:pagination="pagination"
+            :loading="loading"
+            :rows-per-page-options="[5, 10, 20]"
+            @request="onRequest"
+        >
             <template v-slot:top-right>
-            <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-            <template v-slot:append>
-                <q-icon name="search" />
+                <q-input
+                    dense
+                    debounce="300"
+                    v-model="filter"
+                    @update:model-value="getCustomers"
+                    placeholder="Pesquisar cliente..."
+                    class="search-input"
+                >
+                    <template v-slot:append>
+                        <q-icon name="search" />
+                    </template>
+                </q-input>
             </template>
-            </q-input>
-        </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
@@ -71,6 +87,13 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
+        const filter = ref('')
+        const loading = ref(false)
+        const pagination = ref({
+            page: 1,
+            rowsPerPage: 5,
+            rowsNumber: 0
+        })
         const { list, changeStatus, destroy } = customersService()
 
         const columns = [
@@ -87,12 +110,32 @@ export default defineComponent({
             getCustomers()
         })
 
+        const onRequest = (params) => {
+            const { page, rowsPerPage } = params.pagination
+            pagination.value.page = page
+            pagination.value.rowsPerPage = rowsPerPage
+            getCustomers()
+        }
+
         const getCustomers = async () => {
+            loading.value = true
             try {
-                const { data } = await list()
-                rows.value = data.data
+                const params = {
+                    page: pagination.value.page,
+                    per_page: pagination.value.rowsPerPage,
+                    filter: filter.value || '', // Garante que um valor seja enviado
+                    _timestamp: new Date().getTime()
+                }
+                const { data } = await list('', params)
+
+                console.log('Resposta da API:', data) // Debug
+
+                rows.value = [...data.data] // Força reatividade no Vue
+                pagination.value.rowsNumber = data.meta.total
             } catch (error) {
-                console.log(error)
+                console.error('Erro na requisição:', error)
+            } finally {
+                loading.value = false
             }
         }
 
@@ -125,11 +168,11 @@ export default defineComponent({
             router.push({ name: 'customersForm', params: { id } })
         }
 
-        const handleDestroyCustomer = async (id, name) => {
+        const handleDestroyCustomer = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja mesmo excluir este cliente? Não prefere inativa-lo?',
+                    message: 'Deseja mesmo excluir este cliente? Não prefere inativá-lo?',
                     cancel: { label: 'Cancelar', color: 'primary', outline: true },
                     ok: { label: 'Confirmar', color: 'primary' },
                     persistent: true
@@ -139,13 +182,8 @@ export default defineComponent({
                     await getCustomers()
                 })
             } catch (error) {
-                notifyError('Erro ao excluir clienteee!')
+                notifyError('Erro ao excluir cliente!')
             }
-        }
-
-        const convertStatus = (status) => {
-            console.log('Valor recebido em status:', status)
-            return status.name === 'Ativo' ? 1 : 2
         }
 
         return {
@@ -154,8 +192,11 @@ export default defineComponent({
             columns,
             handleChangeStatusCustomer,
             handleEditCustomer,
-            handleDestroyCustomer,
-            convertStatus
+            filter,
+            loading,
+            pagination,
+            onRequest,
+            handleDestroyCustomer
         }
     }
 })
