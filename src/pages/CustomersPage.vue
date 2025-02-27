@@ -119,14 +119,14 @@ export default defineComponent({
                 align: 'left'
             },
             {
-                label: 'Fone 1',
+                label: 'Telefone 1',
                 field: 'phone_1',
                 name: 'phone_1',
                 sortable: true,
                 align: 'left'
             },
             {
-                label: 'Fone 2',
+                label: 'Telefone 2',
                 field: 'phone_2',
                 name: 'phone_2',
                 sortable: true,
@@ -207,11 +207,6 @@ export default defineComponent({
             router.push({ name: 'customersForm', params: { id } })
         }
 
-        const loadingStatusEdit = (status) => {
-            console.log('Valor recebido em status:', status)
-            return status.name === 1 ? 'Ativo' : 'Inativo'
-        }
-
         const handleDestroyCustomer = async (id) => {
             try {
                 $q.dialog({
@@ -228,6 +223,11 @@ export default defineComponent({
             } catch (error) {
                 notifyError('Erro ao excluir cliente!')
             }
+        }
+
+        const loadingStatusEdit = (status) => {
+            console.log('Valor recebido em status:', status)
+            return status.name === 1 ? 'Ativo' : 'Inativo'
         }
 
         return {
