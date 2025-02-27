@@ -78,7 +78,6 @@
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import customersService from 'src/services/customersService'
 import { useRouter, useRoute } from 'vue-router'
-import rolesService from 'src/services/rolesService'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 import { activeInactive } from 'src/constants/statusOptions'
@@ -98,8 +97,7 @@ export default defineComponent({
     setup () {
         const router = useRouter()
         const route = useRoute()
-        const roles = ref([])
-        const { post, getById, update } = customersService()
+        const { post, getByID, update } = customersService()
         const { notifySuccess, notifyError } = notifications()
 
         const form = ref({
@@ -116,26 +114,17 @@ export default defineComponent({
         headerProps.title = isEditMode.value ? 'Editar Cliente' : 'Cadastrar Cliente'
 
         onMounted(async () => {
+
             if (route.params.id) {
                 await getCustomers(route.params.id)
             }
-            await getRoles()
         })
-
-        const getRoles = async () => {
-            try {
-                const { list } = rolesService()
-                const { data } = await list('/getactive')
-                roles.value = data.data
-            } catch (error) {
-                notifyError(error.response.data.message)
-            }
-        }
 
         const getCustomers = async (id) => {
             try {
-                const { data } = await getById(id)
-                form.value = data
+                const { data } = await getByID(id)
+                form.value = data.data
+
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: listRoute })
@@ -169,7 +158,6 @@ export default defineComponent({
         const makePayload = () => {
             const payload = {
                 name: form.value.name,
-                roles: form.value.roles,
                 email: form.value.email,
                 phone_1: form.value.phone_1,
                 phone_2: form.value.phone_1,
