@@ -126,6 +126,9 @@ export default defineComponent({
                 form.value = data.data
 
             } catch (error) {
+
+                console.log(error)
+
                 notifyError(error.response.data.message)
                 router.push({ name: listRoute })
             }
