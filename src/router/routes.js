@@ -22,16 +22,6 @@ const routes = [
                 component: () => import('src/pages/UsersForm.vue')
             },
             {
-                path: 'incomes',
-                name: 'incomes',
-                component: () => import('src/pages/IncomesPage.vue')
-            },
-            {
-                path: 'incomes-form/:id?',
-                name: 'incomesForm',
-                component: () => import('src/pages/IncomesForm.vue')
-            },
-            {
                 path: 'roles',
                 name: 'roles',
                 component: () => import('src/pages/RolesPage.vue')
@@ -50,7 +40,18 @@ const routes = [
                 path: 'menus-form/:id?',
                 name: 'menusForm',
                 component: () => import('src/pages/MenusForm.vue')
-            }
+            },
+            {
+                path: 'accounts',
+                name: 'accounts',
+                component: () => import('src/pages/AccountsPage.vue')
+            },
+            {
+                path: 'accounts-form/:id?',
+                name: 'accountsForm',
+                component: () => import('src/pages/AccountsForm.vue')
+            },
+
         ]
     },
     {
