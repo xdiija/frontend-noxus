@@ -51,6 +51,8 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import currency from '../utils/currency';
+import { accountTypes } from 'src/constants/accountTypes';
 
 const headerProps = {
     title: 'Contas',
@@ -71,6 +73,7 @@ export default defineComponent({
     setup () {
         const $q = useQuasar()
         const { notifySuccess, notifyError } = notifications()
+        const { formatBRL } = currency()
         const router = useRouter()
         const rows = ref([])
         const { list, changeStatus, destroy } = accountsService()
@@ -91,14 +94,14 @@ export default defineComponent({
             },
             {
                 label: 'Tipo',
-                field: 'type',
+                field: row => getAccountTypeName(row.type),
                 name: 'type',
                 sortable: true,
                 align: 'left'
             },
             {
                 label: 'Saldo',
-                field: 'balance',
+                field: row => formatBRL(row.balance),
                 name: 'balance',
                 sortable: true,
                 align: 'left'
@@ -196,13 +199,19 @@ export default defineComponent({
             }
         }
 
+        const getAccountTypeName = (type) => {
+            const accountType = accountTypes.find((item) => item.id === type);
+            return accountType.name;
+        };
+
         return {
             headerProps,
             rows,
             columns,
             handleChangeStatus,
             handleEditAccount,
-            handleDestroy
+            handleDestroy,
+            getAccountTypeName
         }
     }
 })

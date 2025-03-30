@@ -8,7 +8,6 @@
         />
         <q-form
             @submit="onSubmit"
-            @reset="onReset"
             class="row q-col-gutter-sm"
         >
             <q-input
@@ -19,17 +18,22 @@
                 class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
-            <q-input
+
+            <q-select
+                label="Tipo"
+                class="col-md-6 col-xs-12"
                 outlined
                 v-model="form.type"
-                label="Tipo"
-                lazy-rules
-                class="col-md-6 col-xs-12"
-                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
+                :options="accountTypes"
+                option-label="name"
+                option-value="id"
+                emit-value
+                map-options
+                :rules="[val => !!val || 'Campo Obrigatório!']"
             />
             <q-input
                 outlined
-                v-model="form.balance"
+                v-model="formattedBalance"
                 label="Saldo"
                 lazy-rules
                 class="col-md-6 col-xs-12"
@@ -60,7 +64,7 @@
                     color="primary"
                     class="float-right q-mr-sm"
                     icon="arrow_back"
-                    :to="{ name: 'roles' }"
+                    :to="{ name: 'accounts' }"
                     outline
                 />
             </div>
@@ -75,16 +79,18 @@ import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 import { activeInactive } from 'src/constants/statusOptions';
+import { accountTypes } from 'src/constants/accountTypes';
+import currency from '../utils/currency';
 
 const headerProps = {
     title: '',
     btnIcon: 'format_list_numbered',
     btnName: 'Listar',
-    btnTo: 'roles'
+    btnTo: 'accounts'
 }
 
 export default defineComponent({
-    name: 'RolesForm',
+    name: 'AccountsForm',
     components: { ViewHeader },
     props: {
         user: { type: Object, required: true }
@@ -92,162 +98,51 @@ export default defineComponent({
     setup () {
         const router = useRouter()
         const route = useRoute()
+        const { formatBRL, formatUSD, maskCurrency } = currency()
         const { post, getByID, update } = accountsService()
         const { notifySuccess, notifyError } = notifications()
 
-        const menus = ref([])
         const form = ref({
             name: null,
-            status: null,
-            permissions: []
+            type: null,
+            balance: 0,
+            status: null
         })
 
         const isEditMode = computed(() => !!route.params.id)
-        headerProps.title = isEditMode.value ? 'Editar Perfil' : 'Cadastrar Perfil'
+        headerProps.title = isEditMode.value ? 'Editar Conta' : 'Cadastrar Conta'
 
         onMounted(async () => {
             if (route.params.id) {
-                await getRole(route.params.id)
+                await getAccount(route.params.id)
             }
-            await getMenus()
         })
 
         const onSubmit = async () => {
-            form.value.id ? updateRole() : newRole()
+            form.value.id ? updateAccount() : newAccount()
         }
 
-        const togglePermission = (menuId, permission, isChecked) => {    
-                    
-            if (isChecked) {
-                addPermission(menuId, permission)
-                const menu = menus.value.find(m => m.id === menuId);
-                if (menu) {
-                    menu.children.forEach(child => {
-                        addPermission(child.id, permission)
-                    });
-                } else {
-                    const parent = findParentByChildId(menuId)
-                    addPermission(parent.id, permission)
-                }
-                
-            } else {
-                removePermission(menuId, permission)
-                const menu = menus.value.find(m => m.id === menuId);
-                if (menu) {
-                    menu.children.forEach(child => {
-                        removePermission(child.id, permission)
-                    });
-                } else {
-                    const parent = findParentByChildId(menuId)
-                    if(! hasPermissionForChildMenus(parent.children, permission)){
-                        removePermission(parent.id, permission) 
-                    }
-                }
-
-            }
-        };
-
-        const isPermissionOnArray = (menuId, permission) => {
-            return form.value.permissions.some(
-                    perm => perm.menu_id === menuId && perm.permission === permission
-                )
-        }
-
-        function hasPermissionForChildMenus(menus, permission) {
-            return menus.some(menu => 
-                form.value.permissions.some(p => p.menu_id === menu.id && p.permission === permission)
-            );
-        }
-
-        const isPermissionChecked = (menuId, permission) => {
-            return (
-                form.value.permissions.some(
-                    (perm) => perm.menu_id === menuId && perm.permission === permission
-                )
-            );
-        };
-
-        const addPermission = (menuId, permission) => {
-            if ( !isPermissionOnArray(menuId, permission)) {
-                form.value.permissions.push({ menu_id: menuId, permission });
-            }
-            if (permission != 'can_view' && !isPermissionOnArray(menuId, 'can_view')) {
-                form.value.permissions.push({ menu_id: menuId, permission: 'can_view' });
-            }
-        };
-
-        const removePermission = (menuId, permission) => {
-           form.value.permissions = form.value.permissions.filter(
-                perm => !(perm.menu_id === menuId && perm.permission === permission)
-            );
-            
-            if (permission === 'can_view') {
-                
-                form.value.permissions = form.value.permissions.filter(
-                    perm => perm.menu_id !== menuId || (perm.permission !== 'can_create' && perm.permission !== 'can_update')
-                );
-            }
-        };
-
-        const findParentByChildId = (childId) => {
-            const data = menus.value;
-            for (let item of data) {
-                const child = item.children.find(child => child.id === childId);
-                if (child) {
-                    return item;
-                }
-            }
-            return null;
-        };
-
-        const permissionsToFrontend = (backendPermissions) => {
-            return backendPermissions.flatMap(permission => {
-                return ['can_view', 'can_create', 'can_update']
-                    .filter(key => permission[key] === 1)
-                    .map(key => ({ menu_id: permission.menu_id, permission: key }));
-            });
-        };
-
-        const permissionsToBackend = (frontendPermissions) => {
-            const groupedPermissions = {};
-            frontendPermissions.forEach(({ menu_id, permission }) => {
-                if (!groupedPermissions[menu_id]) {
-                    groupedPermissions[menu_id] = { menu_id, can_view: 0, can_create: 0, can_update: 0 };
-                }
-                groupedPermissions[menu_id][permission] = 1;
-            });
-            return Object.values(groupedPermissions);
-        };
-
-        const getMenus = async () => {
+        const getAccount = async (id) => {
             try {
-                const { list } = menusService()
-                const { data } = await list("/getactive")
-                menus.value = data.data
-            } catch (error) {
-                notifyError(error.response.data.message)
-            }
-        }
-
-        const getRole = async (id) => {
-            try {
-                const { data } = await getByID(id, "?show_permissions=1")
-                const roleData = data.data;
+                const { data } = await getByID(id)
+                const accountData = data.data;
+                             
                 form.value = {
-                    ...roleData,
-                    permissions: permissionsToFrontend(roleData.permissions || []),
-                };                
+                    ...accountData,
+                    balance: maskCurrency(accountData.balance),
+                    type: accountData.type,
+                };
             } catch (error) {
                 notifyError(error.response.data.message)
-                router.push({ name: 'roles' })
+                router.push({ name: 'accounts' })
             }
         }
 
-        const updateRole = async () => {
+        const updateAccount = async () => {
             try {
                 await update(makePayload(), form.value.id)
-                notifySuccess('Perfil atualizado com sucesso!')
-                router.push({ name: 'roles' })
+                notifySuccess('Conta atualizada com sucesso!')
+                router.push({ name: 'accounts' })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
@@ -255,11 +150,11 @@ export default defineComponent({
             }
         }
 
-        const newRole = async () => {
-            try {
+        const newAccount = async () => {
+            try {              
                 await post(makePayload())
-                notifySuccess('Perfil criado com sucesso!')
-                router.push({ name: 'roles' })
+                notifySuccess('Conta criada com sucesso!')
+                router.push({ name: 'accounts' })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
@@ -267,37 +162,50 @@ export default defineComponent({
             }
         }
 
-        const makePayload = () => {    
+        const makePayload = () => {             
             const payload = {
                 name: form.value.name,
-                status: form.value.status.id,
-                permissions: permissionsToBackend(form.value.permissions),
+                type: form.value.type,
+                balance: formatUSD(form.value.balance),
+                status: form.value.status.id
             }
             return payload        
         }
 
+        const onInputBalance = (value) => {
+            if (!value) {
+                form.value.balance = null;
+                return;
+            }            
+            form.value.balance = formatBRL(value)
+        };
+
+
+        const formattedBalance = computed({
+            get() {
+                return form.value.balance || '';
+            },
+            set(value) {
+                form.value.balance = value;
+                onInputBalance(value);
+            }
+        });
+
         return {
-            form,
             onSubmit,
             onReset () {
                 form.value = {
                     name: null,
-                    status: null,
-                    permissions: []
+                    type: null,
+                    balance: 0,
+                    status: null
                 }
             },
+            form,
+            formattedBalance,
             headerProps,
-            menus,
             activeInactive,
-            isPermissionChecked,
-            togglePermission,
-            isPermissionOnArray,
-            findParentByChildId,
-            addPermission,
-            removePermission,
-            hasPermissionForChildMenus,
-            permissionsToFrontend,
-            permissionsToBackend
+            accountTypes
         }
     }
 })
