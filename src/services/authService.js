@@ -8,17 +8,17 @@ const menus = ref(JSON.parse(localStorage.getItem('menus')) || [])
 
 export default function authService(url = '') {
     const { post } = useApi(`auth/${url}`)
-    const meApi = useApi('auth/me');
-    const refreshApi = useApi('auth/refresh');
+    const meApi = useApi('auth/me')
+    const refreshApi = useApi('auth/refresh')
 
     function setToken(tokenValue, expiresInSeconds) {
         localStorage.setItem('token', tokenValue)
         token.value = tokenValue
 
-        const expiresInMinutes = expiresInSeconds / 60;
-        const halfExpiresInMinutes = expiresInMinutes / 2;
-        const refreshTime = new Date();
-        refreshTime.setMinutes(refreshTime.getMinutes() + Math.floor(halfExpiresInMinutes));
+        const expiresInMinutes = expiresInSeconds / 60
+        const halfExpiresInMinutes = expiresInMinutes / 2
+        const refreshTime = new Date()
+        refreshTime.setMinutes(refreshTime.getMinutes() + Math.floor(halfExpiresInMinutes))
         localStorage.setItem('refresh_time', refreshTime)
         tokenRefreshTime.value = refreshTime
     }
@@ -65,7 +65,7 @@ export default function authService(url = '') {
     }
 
     async function verifyToken() {
-        if (!token.value) return false;
+        if (!token.value) return false
 
         try {
             await meApi.post()
@@ -77,14 +77,14 @@ export default function authService(url = '') {
     }
 
     async function refreshToken() {
-        const currentDateTime = new Date();
+        const currentDateTime = new Date()
 
         if (currentDateTime >= tokenRefreshTime.value) {
-            const { data } = await refreshApi.post();
-            setToken(data.access_token, data.expires_in);
+            const { data } = await refreshApi.post()
+            setToken(data.access_token, data.expires_in)
         }
 
-        return true;
+        return true
     }
 
     return {
