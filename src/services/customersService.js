@@ -1,8 +1,7 @@
 import useApi from 'src/composables/UseApi'
 
-export default function incomeService() {
-
-    const { list, getByID, post, update, changeStatus, destroy } = useApi('accounts')
+export default function customersService() {
+    const { list, getByID, post, update, changeStatus, destroy } = useApi('customers')
 
     return {
         list,
