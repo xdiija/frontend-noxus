@@ -18,27 +18,26 @@
                 class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
+
+            <q-select
+                label="Tipo"
+                class="col-md-6 col-xs-12"
+                outlined
+                v-model="form.type"
+                :options="accountTypes"
+                option-label="name"
+                option-value="id"
+                emit-value
+                map-options
+                :rules="[val => !!val || 'Campo Obrigatório!']"
+            />
             <q-input
                 outlined
-                v-model="form.email"
-                label="E-mail"
-                type="email"
+                v-model="formattedBalance"
+                label="Saldo"
                 lazy-rules
                 class="col-md-6 col-xs-12"
-                :rules="[ val => val && val.includes('@') || 'E-mail inválido']"
-            />
-            <q-input
-                outlined
-                v-model="form.phone_1"
-                label="Telefone 1"
-                class="col-md-6 col-xs-12"
-                :rules="[ val => val && val.length >= 10 || 'Telefone inválido!']"
-            />
-            <q-input
-                outlined
-                v-model="form.phone_2"
-                label="Telefone 2 (Opcional)"
-                class="col-md-6 col-xs-12"
+                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
             <q-select
                 label="Status"
@@ -46,7 +45,6 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
-                option-value="value"
                 option-label="name"
                 emit-value
                 map-options
@@ -66,7 +64,7 @@
                     color="primary"
                     class="float-right q-mr-sm"
                     icon="arrow_back"
-                    :to="{ name: listRoute }"
+                    :to="{ name: 'accounts' }"
                     outline
                 />
             </div>
@@ -75,82 +73,76 @@
 </template>
 
 <script>
-import { defineComponent, ref, computed, onMounted } from 'vue'
-import customersService from 'src/services/customersService'
+import { defineComponent, ref, onMounted, computed } from 'vue'
+import accountsService from 'src/services/accountsService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions'
-
-const listRoute = 'customers'
+import { activeInactive } from 'src/constants/statusOptions';
+import { accountTypes } from 'src/constants/accountTypes';
+import currency from '../utils/currency';
 
 const headerProps = {
     title: '',
     btnIcon: 'format_list_numbered',
     btnName: 'Listar',
-    btnTo: listRoute
+    btnTo: 'accounts'
 }
 
 export default defineComponent({
-    name: 'CustomersForm',
+    name: 'AccountsForm',
     components: { ViewHeader },
+    props: {
+        user: { type: Object, required: true }
+    },
     setup () {
         const router = useRouter()
         const route = useRoute()
-        const { post, getByID, update } = customersService()
+        const { formatBRL, formatUSD, maskCurrency } = currency()
+        const { post, getByID, update } = accountsService()
         const { notifySuccess, notifyError } = notifications()
 
         const form = ref({
-            name: '',
-            email: '',
-            phone_1: '',
-            phone_2: '',
-            status: ''
+            name: null,
+            type: null,
+            balance: 0,
+            status: null
         })
-
-        const customers = ref([])
 
         const isEditMode = computed(() => !!route.params.id)
-        headerProps.title = isEditMode.value ? 'Editar Cliente' : 'Cadastrar Cliente'
+        headerProps.title = isEditMode.value ? 'Editar Conta' : 'Cadastrar Conta'
 
         onMounted(async () => {
-
             if (route.params.id) {
-                await getCustomers(route.params.id)
+                await getAccount(route.params.id)
             }
         })
 
-        const getCustomers = async (id) => {
+        const onSubmit = async () => {
+            form.value.id ? updateAccount() : newAccount()
+        }
+
+        const getAccount = async (id) => {
             try {
                 const { data } = await getByID(id)
-                form.value = data.data
-
+                const accountData = data.data;
+                             
+                form.value = {
+                    ...accountData,
+                    balance: maskCurrency(accountData.balance),
+                    type: accountData.type,
+                };
             } catch (error) {
-
-                console.log(error)
-
                 notifyError(error.response.data.message)
-                router.push({ name: listRoute })
+                router.push({ name: 'accounts' })
             }
         }
 
-        const newCustomer = async () => {
-            try {
-                await post(makePayload())
-                notifySuccess('Cliente criado com sucesso!')
-                router.push({ name: 'customers' })
-            } catch (error) {
-                Object.keys(error.response.data.errors).forEach(key => {
-                    notifyError(error.response.data.errors[key])
-                })
-            }
-        }
-
-        const updateCustomer = async (customerData) => {
+        const updateAccount = async () => {
             try {
                 await update(makePayload(), form.value.id)
-                notifySuccess('Cliente atualizado com sucesso!')
-                router.push({ name: 'customers' })
+                notifySuccess('Conta atualizada com sucesso!')
+                router.push({ name: 'accounts' })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
@@ -158,41 +150,62 @@ export default defineComponent({
             }
         }
 
-        const makePayload = () => {
+        const newAccount = async () => {
+            try {              
+                await post(makePayload())
+                notifySuccess('Conta criada com sucesso!')
+                router.push({ name: 'accounts' })
+            } catch (error) {
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })
+            }
+        }
+
+        const makePayload = () => {             
             const payload = {
                 name: form.value.name,
-                email: form.value.email,
-                phone_1: form.value.phone_1,
-                phone_2: form.value.phone_1,
+                type: form.value.type,
+                balance: formatUSD(form.value.balance),
                 status: form.value.status.id
             }
-            return payload
+            return payload        
         }
 
-        const convertStatus = (status) => {
-            console.log('Valor recebido em status:', status)
-            return status.name === 'Ativo' ? 1 : 2
-        }
+        const onInputBalance = (value) => {
+            if (!value) {
+                form.value.balance = null;
+                return;
+            }            
+            form.value.balance = formatBRL(value)
+        };
 
-        const onSubmit = async () => {
-            const customerData = {
-                ...form.value,
-                status: convertStatus(form.value.status) // Converte antes de enviar
+
+        const formattedBalance = computed({
+            get() {
+                return form.value.balance || '';
+            },
+            set(value) {
+                form.value.balance = value;
+                onInputBalance(value);
             }
-
-            console.log('Enviando dados para API:', customerData)
-
-            customerData.id ? updateCustomer(customerData) : newCustomer(customerData)
-        }
+        });
 
         return {
-            form,
             onSubmit,
+            onReset () {
+                form.value = {
+                    name: null,
+                    type: null,
+                    balance: 0,
+                    status: null
+                }
+            },
+            form,
+            formattedBalance,
             headerProps,
             activeInactive,
-            listRoute,
-            customers,
-            convertStatus
+            accountTypes
         }
     }
 })

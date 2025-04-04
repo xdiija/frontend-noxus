@@ -1,43 +1,20 @@
 <template>
     <div class="q-pa-md">
-        <router-view />
-        <ViewHeader
-            :title="headerProps.title"
-            :btnTo="headerProps.btnTo"
-            :btnIcon="headerProps.btnIcon"
-            :btnName="headerProps.btnName"
-        />
-        <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="id"
-            :filter="filter"
-            v-model:pagination="pagination"
-            :loading="loading"
-            :rows-per-page-options="[5, 10, 20]"
-            @request="onRequest"
-        >
-            <template v-slot:top-right>
-                <q-input
-                    dense
-                    debounce="300"
-                    v-model="filter"
-                    @update:model-value="getCustomers"
-                    placeholder="Pesquisar cliente..."
-                    class="search-input"
-                >
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-            </template>
+    <router-view />
+    <ViewHeader
+        :title="headerProps.title"
+        :btnTo="headerProps.btnTo"
+        :btnIcon="headerProps.btnIcon"
+        :btnName="headerProps.btnName"
+    />
+        <q-table :rows="rows" :columns="columns" row-key="name">
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
-                        @click="handleChangeStatusCustomer(props.row.id)">
+                        @click="handleChangeStatus(props.row.id)">
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
@@ -46,19 +23,22 @@
                         icon="edit"
                         color="warning"
                         dense size="sm"
-                        @click="handleEditCustomer(props.row.id)"
+                        @click="handleEditAccount(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Editar</q-tooltip>
+                        <q-tooltip class="bg-accent">
+                            Editar
+                        </q-tooltip>
                     </q-btn>
                     <q-btn
                         icon="delete"
                         color="negative"
                         dense size="sm"
-                        @click="handleDestroyCustomer(props.row.id)"
+                        @click="handleDestroy(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
+
             </template>
         </q-table>
     </div>
@@ -66,36 +46,37 @@
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
-import customersService from 'src/services/customersService'
+import accountsService from 'src/services/accountsService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import currency from '../utils/currency';
+import { accountTypes } from 'src/constants/accountTypes';
 
 const headerProps = {
-    title: 'Clientes',
-    btnTo: 'customersForm',
+    title: 'Contas',
+    btnTo: 'accountsForm',
     btnIcon: 'add',
-    btnName: 'Adicionar Cliente'
+    btnName: 'Adicionar'
 }
 
 export default defineComponent({
-    name: 'CustomersPage',
+    name: 'AccountsPage',
     components: { ViewHeader },
+    props: {
+        user: {
+            type: Object,
+            required: true
+        }
+    },
     setup () {
         const $q = useQuasar()
         const { notifySuccess, notifyError } = notifications()
+        const { formatBRL } = currency()
         const router = useRouter()
         const rows = ref([])
-        const filter = ref('')
-        const loading = ref(false)
-        const pagination = ref({
-            page: 1,
-            rowsPerPage: 5,
-            rowsNumber: 0
-        })
-        const { list, changeStatus, destroy } = customersService()
-
+        const { list, changeStatus, destroy } = accountsService()
         const columns = [
             {
                 label: 'ID',
@@ -112,30 +93,23 @@ export default defineComponent({
                 align: 'left'
             },
             {
-                label: 'Email',
-                field: 'email',
-                name: 'email',
+                label: 'Tipo',
+                field: row => getAccountTypeName(row.type),
+                name: 'type',
                 sortable: true,
                 align: 'left'
             },
             {
-                label: 'Telefone 1',
-                field: 'phone_1',
-                name: 'phone_1',
-                sortable: true,
-                align: 'left'
-            },
-            {
-                label: 'Telefone 2',
-                field: 'phone_2',
-                name: 'phone_2',
+                label: 'Saldo',
+                field: row => formatBRL(row.balance),
+                name: 'balance',
                 sortable: true,
                 align: 'left'
             },
             {
                 label: 'Status',
                 field: row => row.status.name,
-                name: 'status',
+                name: 'email',
                 sortable: true,
                 align: 'left'
             },
@@ -147,101 +121,97 @@ export default defineComponent({
             }
         ]
 
-        const onRequest = (params) => {
-            const { page, rowsPerPage } = params.pagination
-            pagination.value.page = page
-            pagination.value.rowsPerPage = rowsPerPage
-            getCustomers()
-        }
+        onMounted(() => {
+            getAccounts()
+        })
 
-        const getCustomers = async () => {
-            loading.value = true
-
+        const getAccounts = async () => {
             try {
-                const params = {
-                    page: pagination.value.page,
-                    per_page: pagination.value.rowsPerPage,
-                    filter: filter.value
-                }
-                const { data } = await list('', params)
-
+                const { data } = await list()
                 rows.value = data.data
-                pagination.value.rowsNumber = data.meta.total
             } catch (error) {
-                console.error('Erro na requisição:', error)
-            } finally {
-                loading.value = false
+                console.log(error)
             }
         }
 
-        onMounted(() => {
-            getCustomers()
-        })
-
-        const handleChangeStatusCustomer = async (id) => {
-            try {
+        const handleChangeStatus = async (id) => {
+            
+            try {             
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente alterar o status do cliente?',
+                    message: 'Deseja realmente alterar o status?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'primary',
-                        outline: true
+                        outline: true 
                     },
                     ok: {
                         label: 'Confirmar',
-                        color: 'primary'
+                        color: 'primary',
                     },
                     persistent: true
                 }).onOk(async () => {
                     await changeStatus(id)
                     notifySuccess('Status alterado com sucesso!')
-                    await getCustomers()
+                    await getAccounts()
                 })
             } catch (error) {
-                notifyError('Erro ao alterar status do cliente.')
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })
             }
         }
 
-        const handleEditCustomer = (id) => {
-            router.push({ name: 'customersForm', params: { id } })
+        const handleEditAccount = (id) => {
+            router.push({ name: 'accountsForm', params: { id } })
         }
 
-        const handleDestroyCustomer = async (id) => {
+        const handleDestroy = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja mesmo excluir este cliente? Não prefere inativá-lo?',
-                    cancel: { label: 'Cancelar', color: 'primary', outline: true },
-                    ok: { label: 'Confirmar', color: 'primary' },
+                    message: 'Deseja realmente excluir o registro?',
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true 
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary',
+                    },
                     persistent: true
                 }).onOk(async () => {
                     await destroy(id)
-                    notifySuccess(`Cliente ${id} removido com sucesso!`)
-                    await getCustomers()
+                    $q.notify({
+                        message: `Registro ${id} removido!`,
+                        icon: 'check',
+                        color: 'positive'
+                    })
+                    await getAccounts()
                 })
             } catch (error) {
-                notifyError('Erro ao excluir cliente!')
+                $q.notify({
+                    message: 'Erro ao excluir registro!',
+                    icon: 'times',
+                    color: 'negative'
+                })
             }
         }
 
-        const loadingStatusEdit = (status) => {
-            console.log('Valor recebido em status:', status)
-            return status.name === 1 ? 'Ativo' : 'Inativo'
-        }
+        const getAccountTypeName = (type) => {
+            const accountType = accountTypes.find((item) => item.id === type);
+            return accountType.name;
+        };
 
         return {
             headerProps,
             rows,
             columns,
-            handleChangeStatusCustomer,
-            handleEditCustomer,
-            filter,
-            loading,
-            pagination,
-            onRequest,
-            handleDestroyCustomer,
-            loadingStatusEdit
+            handleChangeStatus,
+            handleEditAccount,
+            handleDestroy,
+            getAccountTypeName
         }
     }
 })
