@@ -1,25 +1,21 @@
 <template>
-  <div class="fullscreen bg-primary text-white text-center q-pa-md flex flex-center">
+  <div class="fullscreen bg-blue text-white text-center q-pa-md flex flex-center">
     <div>
       <div style="font-size: 30vh">
-        <img
-          src="../assets/MykeErrorPage.png"
-          alt="Error Image"
-          style="width: 300px; height: auto; margin-right: 10px;"
-        />
+        404
       </div>
 
       <div class="text-h2" style="opacity:.4">
-        Ah nãooo! Você acabou se perdendo...
+        Oops. Nothing here...
       </div>
 
       <q-btn
         class="q-mt-xl"
         color="white"
-        text-color="primary"
+        text-color="blue"
         unelevated
         to="/"
-        label="Voltar ao inicio"
+        label="Go Home"
         no-caps
       />
     </div>
@@ -30,6 +26,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-    name: 'ErrorNotFound'
+  name: 'ErrorNotFound'
 })
 </script>
