@@ -1,5 +1,3 @@
-import { Notify } from 'quasar'
-
 export default function currency() {
 
     const formatBRL = (value) => {
