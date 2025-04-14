@@ -51,7 +51,16 @@ const routes = [
                 name: 'accountsForm',
                 component: () => import('src/pages/AccountsForm.vue')
             },
-
+            {
+                path: 'customers',
+                name: 'customers',
+                component: () => import('src/pages/CustomersPage.vue')
+            },
+            {
+                path: 'customers-form/:id?',
+                name: 'customersForm',
+                component: () => import('src/pages/CustomersForm.vue')
+            },
         ]
     },
     {
