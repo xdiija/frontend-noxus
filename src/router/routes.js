@@ -61,6 +61,17 @@ const routes = [
                 name: 'customersForm',
                 component: () => import('src/pages/CustomersForm.vue')
             },
+
+            {
+                path: 'payment-methods',
+                name: 'paymentMethods',
+                component: () => import('src/pages/PaymentMethodsPage.vue')
+            },
+            {
+                path: 'payment-methods-form/:id?',
+                name: 'paymentMethodsForm',
+                component: () => import('src/pages/PaymentMethodsForm.vue')
+            },
         ]
     },
     {
