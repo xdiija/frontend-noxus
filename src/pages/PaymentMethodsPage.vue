@@ -14,7 +14,7 @@
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
-                        @click="handleChangeStatusCustomer(props.row.id)">
+                        @click="handleChangeStatus(props.row.id)">
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
@@ -23,7 +23,7 @@
                         icon="edit"
                         color="warning"
                         dense size="sm"
-                        @click="handleEditCustomer(props.row.id)"
+                        @click="handleEditMethod(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">Editar</q-tooltip>
                     </q-btn>
@@ -31,7 +31,7 @@
                         icon="delete"
                         color="negative"
                         dense size="sm"
-                        @click="handleDestroyCustomer(props.row.id)"
+                        @click="handleDestroy(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">Excluir</q-tooltip>
                     </q-btn>
@@ -115,11 +115,11 @@ export default defineComponent({
             }
         }
 
-        const handleChangeStatusCustomer = async (id) => {
+        const handleChangeStatus = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente alterar o status do cliente?',
+                    message: 'Deseja realmente alterar o status?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'primary',
@@ -136,29 +136,29 @@ export default defineComponent({
                     await getPaymentMethods()
                 })
             } catch (error) {
-                notifyError('Erro ao alterar status do cliente.')
+                notifyError('Erro ao alterar status do registro.')
             }
         }
 
-        const handleEditCustomer = (id) => {
+        const handleEditMethod = (id) => {
             router.push({ name: 'paymentMethodsForm', params: { id } })
         }
 
-        const handleDestroyCustomer = async (id) => {
+        const handleDestroy = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja mesmo excluir este cliente? Não prefere inativá-lo?',
+                    message: 'Deseja mesmo excluir este registro?',
                     cancel: { label: 'Cancelar', color: 'primary', outline: true },
                     ok: { label: 'Confirmar', color: 'primary' },
                     persistent: true
                 }).onOk(async () => {
                     await destroy(id)
-                    notifySuccess(`Cliente ${id} removido com sucesso!`)
+                    notifySuccess(`Registro ${id} removido com sucesso!`)
                     await getPaymentMethods()
                 })
             } catch (error) {
-                notifyError('Erro ao excluir cliente!')
+                notifyError('Erro ao excluir registro!')
             }
         }
 
@@ -166,9 +166,9 @@ export default defineComponent({
             headerProps,
             rows,
             columns,
-            handleChangeStatusCustomer,
-            handleEditCustomer,
-            handleDestroyCustomer
+            handleChangeStatus,
+            handleEditMethod,
+            handleDestroy
         }
     }
 })

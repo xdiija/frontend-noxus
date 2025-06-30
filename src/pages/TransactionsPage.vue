@@ -7,31 +7,14 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
-        <q-table
-            :rows="rows"
-            :columns="columns"
-            row-key="id"
-            :filter="filter"
-            v-model:pagination="pagination"
-            :loading="loading"
-            :rows-per-page-options="[5, 10, 20]"
-            @request="onRequest"
-        >
-        <template v-slot:top-right>
-            <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-            <template v-slot:append>
-                <q-icon name="search" />
-            </template>
-            </q-input>
-        </template>
+        <q-table :rows="rows" :columns="columns" row-key="name" :rows-per-page-options="[0]">
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
-                        @click="handleChangeStatus(props.row.id)"
-                    >
+                        @click="handleChangeStatusCategory(props.row.id)">
                         <q-tooltip class="bg-accent">
                             {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
                         </q-tooltip>
@@ -40,7 +23,7 @@
                         icon="edit"
                         color="warning"
                         dense size="sm"
-                        @click="handleEditUser(props.row.id)"
+                        @click="handleEditCategory(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">Editar</q-tooltip>
                     </q-btn>
@@ -48,12 +31,11 @@
                         icon="delete"
                         color="negative"
                         dense size="sm"
-                        @click="handleDestroy(props.row.id)"
+                        @click="handleDestroyCategory(props.row.id)"
                     >
                         <q-tooltip class="bg-accent">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
-
             </template>
         </q-table>
     </div>
@@ -61,24 +43,22 @@
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
-import usersService from 'src/services/usersService'
+import transactionCategoriesService from 'src/services/transactionCategoriesService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 
 const headerProps = {
-    title: 'Usuários',
-    btnTo: 'usersForm',
+    title: 'Categorias de Transação',
+    btnTo: 'transactionCategoriesForm',
     btnIcon: 'add',
     btnName: 'Adicionar'
 }
 
 export default defineComponent({
-    name: 'UsersPage',
-    components: {
-        ViewHeader
-    },
+    name: 'TransactionCategoriesPage',
+    components: { ViewHeader },
     props: {
         user: {
             type: Object,
@@ -90,14 +70,8 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const rows = ref([])
-        const filter = ref('');
-        const loading = ref(false);
-        const pagination = ref({
-            page: 1,
-            rowsPerPage: 5,
-            rowsNumber: 0
-        });
-        const { list, changeStatus, destroy } = usersService()
+        const { list, changeStatus, destroy } = transactionCategoriesService()
+
         const columns = [
             {
                 label: 'ID',
@@ -114,16 +88,16 @@ export default defineComponent({
                 align: 'left'
             },
             {
-                label: 'Email',
-                field: 'email',
-                name: 'email',
+                label: 'Tipo',
+                field: 'type',
+                name: 'type',
                 sortable: true,
                 align: 'left'
             },
             {
                 label: 'Status',
                 field: row => row.status.name,
-                name: 'email',
+                name: 'status',
                 sortable: true,
                 align: 'left'
             },
@@ -135,100 +109,63 @@ export default defineComponent({
             }
         ]
 
-        const onRequest = (params) => {
-            const { page, rowsPerPage } = params.pagination;
-            pagination.value.page = page;
-            pagination.value.rowsPerPage = rowsPerPage;
-            getUsers();
-        };
+        onMounted(() => {
+            getTransactionCategories()
+        })
 
-        const getUsers = async () => {
-            loading.value = true;            
+        const getTransactionCategories = async () => {
             try {
-                const params = {
-                    page: pagination.value.page,
-                    per_page: pagination.value.rowsPerPage,
-                    filter: filter.value
-                };
-
-                const { data } = await list("", params);
-                
-                rows.value = data.data;
-                pagination.value.rowsNumber = data.meta.total;
+                const { data } = await list()
+                rows.value = data.data
             } catch (error) {
-                console.error(error);
-                notifyError('Erro ao carregar os usuários.');
-            } finally {
-                loading.value = false;
+                console.error('Erro na requisição:', error)
             }
         }
 
-        onMounted(() => {
-            getUsers()
-        })
-
-        const handleChangeStatus = async (id) => {
-            
-            try {             
+        const handleChangeStatusCategory = async (id) => {
+            try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente alterar o status do usuário?',
+                    message: 'Deseja realmente alterar o status da categoria?',
                     cancel: {
                         label: 'Cancelar',
                         color: 'primary',
-                        outline: true 
+                        outline: true
                     },
                     ok: {
                         label: 'Confirmar',
-                        color: 'primary',
+                        color: 'primary'
                     },
                     persistent: true
                 }).onOk(async () => {
                     await changeStatus(id)
                     notifySuccess('Status alterado com sucesso!')
-                    await getUsers()
+                    await getTransactionCategories()
                 })
             } catch (error) {
-                Object.keys(error.response.data.errors).forEach(key => {
-                    notifyError(error.response.data.errors[key])
-                })
+                notifyError('Erro ao alterar status da categoria.')
             }
         }
 
-        const handleEditUser = (id) => {
-            router.push({ name: 'usersForm', params: { id } })
+        const handleEditCategory = (id) => {
+            router.push({ name: 'transactionCategoriesForm', params: { id } })
         }
 
-        const handleDestroy = async (id) => {
+        const handleDestroyCategory = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja realmente excluir o registro?',
-                    cancel: {
-                        label: 'Cancelar',
-                        color: 'primary',
-                        outline: true 
-                    },
-                    ok: {
-                        label: 'Confirmar',
-                        color: 'primary',
-                    },
+                    message: 'Deseja mesmo excluir esta categoria?',
+                    cancel: { label: 'Cancelar', color: 'primary', outline: true },
+                    ok: { label: 'Confirmar', color: 'primary' },
                     persistent: true
                 }).onOk(async () => {
                     await destroy(id)
-                    $q.notify({
-                        message: `Registro ${id} removido!`,
-                        icon: 'check',
-                        color: 'primary'
-                    })
-                    await getUsers()
+                    notifySuccess(`Categoria ${id} removida com sucesso!`)
+                    await getTransactionCategories()
                 })
             } catch (error) {
-                $q.notify({
-                    message: 'Erro ao excluir registro!',
-                    icon: 'times',
-                    color: 'negative'
-                })
+                notifyError('Erro ao excluir categoria!')
             }
         }
 
@@ -236,13 +173,9 @@ export default defineComponent({
             headerProps,
             rows,
             columns,
-            filter,
-            loading,
-            pagination,
-            onRequest,
-            handleChangeStatus,
-            handleEditUser,
-            handleDestroy
+            handleChangeStatusCategory,
+            handleEditCategory,
+            handleDestroyCategory
         }
     }
 })

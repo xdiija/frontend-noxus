@@ -61,7 +61,6 @@ const routes = [
                 name: 'customersForm',
                 component: () => import('src/pages/CustomersForm.vue')
             },
-
             {
                 path: 'payment-methods',
                 name: 'paymentMethods',
@@ -71,6 +70,26 @@ const routes = [
                 path: 'payment-methods-form/:id?',
                 name: 'paymentMethodsForm',
                 component: () => import('src/pages/PaymentMethodsForm.vue')
+            },
+            {
+                path: 'transaction-categories',
+                name: 'transactionCategories',
+                component: () => import('src/pages/TransactionCategoriesPage.vue')
+            },
+            {
+                path: 'transaction-categories-form/:id?',
+                name: 'transactionCategoriesForm',
+                component: () => import('src/pages/TransactionCategoriesForm.vue')
+            },
+            {
+                path: 'transactions',
+                name: 'transactions',
+                component: () => import('src/pages/TransactionsPage.vue')
+            },
+            {
+                path: 'transactions-form/:id?',
+                name: 'transactionsForm',
+                component: () => import('src/pages/TransactionsForm.vue')
             },
         ]
     },
