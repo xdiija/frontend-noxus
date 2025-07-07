@@ -54,7 +54,7 @@ export default {
     data () {
         return {
             login: {
-                email: 'admin@example.com',
+                email: 'djalma@example.com',
                 password: '123456',
                 isPwd: true
             }

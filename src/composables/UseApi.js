@@ -13,19 +13,19 @@ export default function useApi(url) {
         return await api.get(`${url}/${id}${queryParams}`)
     }
 
-    const post = async (reqData) => {
+    const post = async (reqData, endPoint = "") => {
         await refreshToken(url);
         return await api.post(url, reqData)
     }
 
-    const update = async (reqData, id) => {
+    const update = async (reqData, id, endPoint = "") => {
         await refreshToken(url);
-        return await api.put(`${url}/${id}`, reqData)
+        return await api.put(`${url}${endPoint}/${id}`, reqData)
     }
 
-    const changeStatus = async (id) => {
+    const changeStatus = async (id, reqData, endPoint = "") => {
         await refreshToken(url);
-        return await api.put(`${url}/${id}/status`)
+        return await api.put(`${url}${endPoint}/${id}/status`, reqData)
     }
 
     const destroy = async (id) => {

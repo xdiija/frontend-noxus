@@ -198,6 +198,7 @@ export default defineComponent({
                 notifySuccess('Usuário atualizado com sucesso!')
                 router.push({ name: 'users' })
             } catch (error) {
+                console.log(error);
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
                 })
@@ -210,7 +211,7 @@ export default defineComponent({
                 await post(makePayload())
                 notifySuccess('Usuário criado com sucesso!')
                 router.push({ name: 'users' })
-            } catch (error) {
+            } catch (error) {                
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
                 })
