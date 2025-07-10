@@ -7,11 +7,125 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
+
+        <q-tabs
+            v-model="filterData.type"
+            align="left"
+            class="bg-white text-primary q-mb-md"
+            inline-label
+        >
+            <q-tab name="expense" label="Contas a Pagar" @click="setTypeToFilter('expense')"/>
+            <q-tab name="income" label="Contas a Receber" @click="setTypeToFilter('income')"/>
+            <q-tab name="all" label="Todos os Lançamentos" @click="setTypeToFilter('all')" />
+        </q-tabs>
+
+        <q-form class="row q-col-gutter-sm q-mb-md">
+            <q-input
+                class="col-md-3 col-xs-12"
+                filled
+                dense
+                :model-value="dateRangeDisplay()"
+                readonly
+            >
+                <template v-slot:append>
+                    <q-icon name="event" class="cursor-pointer">
+                        <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                            <q-date
+                                v-model="filterData.dateRange"
+                                range
+                                mask="DD/MM/YYYY"
+                                @update:model-value="handleCalendarDateChange"
+                            >
+                                <div class="row items-center q-mb-xs">
+                                    <q-btn
+                                        label="Ontem"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('day', 'last')"
+                                    />
+                                    <q-btn
+                                        label="Hoje"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('day', 'this')"
+                                    />
+                                     <q-btn
+                                        label="Amanhã"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('day', 'next')"
+                                    />
+                                </div>
+
+                                <div class="row items-center q-mb-xs">
+                                    <q-btn
+                                        label="Semana passada"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('week', 'last')"
+                                    />
+                                    <q-btn
+                                        label="Semana atual"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('week', 'this')"
+                                    />
+                                     <q-btn
+                                        label="Próxima semana"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('week', 'next')"
+                                    />
+                                </div>
+
+
+                                <div class="row items-center q-mb-lg">
+                                    <q-btn
+                                        label="Mês passado"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('month', 'last')"
+                                    />
+                                    <q-btn
+                                        label="Mês atual"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('month', 'this')"
+                                    />
+                                     <q-btn
+                                        label="Próximo mês"
+                                        class="col-md-4"
+                                        padding="none" size="sm"
+                                        color="primary" flat no-caps v-close-popup
+                                        @click="setDateRangeToFilter('month', 'next')"
+                                    />
+                                </div>                               
+
+                                <div class="row items-center justify-end">
+                                    <q-btn padding="xs lg" v-close-popup label="Fechar" color="primary" outline />
+                                </div>
+                            </q-date>
+                        </q-popup-proxy>
+                    </q-icon>
+                </template>
+            </q-input>
+        
+        </q-form>
+
         <q-table :rows="rows" :columns="columns" row-key="name" :rows-per-page-options="[0]">
+            
             <template v-slot:body-cell-due_date="props">
                 <q-td :props="props" 
                       :class="[
-                            isOverdue(props.row.due_date, props.row.payment_date) ? 'text-negative' : 'text-positive',
+                            props.row.status.name == 'Vencido' ? 'text-negative' : 'text-positive',
                             'text-weight-bold'
                         ]">
                     {{ props.value }}
@@ -19,10 +133,13 @@
             </template>
             <template v-slot:body-cell-amount="props">
                 <q-td :props="props" 
-                      :class="[
-                            props.row.transaction.type === 'income' ? 'text-positive' : 'text-negative',
-                            'text-weight-bold'
-                        ]">
+                    :class="[
+                        'text-weight-bold',
+                        props.row.transaction.type == 'income'
+                            ? 'text-positive' : 'text-negative'
+                    ]"
+                >
+                    <q-icon :name="props.row.transaction.type === 'income' ? 'add' : 'remove'" />
                     {{ props.value }}
                 </q-td>
             </template>
@@ -138,7 +255,7 @@ export default defineComponent({
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
         const { formatBRL } = currency()
-        const { convertToDbFormat } = dateHelper()
+        const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const rows = ref([])
         const { list, changeStatus, destroy } = transactionsService()
 
@@ -159,7 +276,7 @@ export default defineComponent({
             },
             {
                 label: 'Pagamento',
-                field: row => row.payment_date ?? getPaymentStatus(row),
+                field: row => row.payment_date ?? row.status.name,
                 name: 'payment_date',
                 sortable: true,
                 align: 'left'
@@ -214,6 +331,13 @@ export default defineComponent({
             showDatePicker: null,
         })
 
+        const filterData = ref({
+            type: 'all',
+            account: 'all',
+            status: 'all',
+            dateRange: getCurrentMonthRange()
+        })
+
         const handleChangeStatusTransaction = (id, status) => {
             changeStatusData.value.id = id
             changeStatusData.value.newStatus = status.id == 1 ? 2 : 1;
@@ -255,27 +379,33 @@ export default defineComponent({
         }
 
         const getPayments = async () => {
+            console.log('getPayments');
+            
             try {
-                const { data } = await list('/get-payments')     
+                const { data } = await list('/get-payments', getReqParams())     
                 rows.value = data.data
             } catch (error) {
-                console.error('Erro na requisição:', error)
+                
             }
         }
 
-        const isOverdue = (dueDate, paymentDate) => {
-            if (paymentDate) return false;
-            
-            const due = new Date(convertToDbFormat(dueDate));
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            return due < today;
-        }
+        const getReqParams = () => {
+           
+            const params = {};
+            if (filterData.value.type != 'all') params.type = filterData.value.type;
+            if (filterData.value.account != 'all') params.account = filterData.value.account;
 
-         const getPaymentStatus = (row) => {
-            if (isOverdue(row.due_date, row.payment_date)) return 'Vencido';            
-            return row.status.name;
+            if (typeof filterData.value.dateRange == "string") {
+                params.date_from = convertToDbFormat(filterData.value.dateRange);
+                params.date_to = convertToDbFormat(filterData.value.dateRange);
+            }
+
+            if (typeof filterData.value.dateRange != "string") {
+                params.date_from = convertToDbFormat(filterData.value.dateRange.from);
+                params.date_to = convertToDbFormat(filterData.value.dateRange.to);
+            }          
+
+            return params;
         }
 
         const handleEditTransaction = (id) => {
@@ -300,17 +430,110 @@ export default defineComponent({
             }
         }
 
+        const setTypeToFilter = (type) => {
+            filterData.value.type = type;
+            getPayments();
+        }
+
+        function getCurrentMonthRange() {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const formatToDb = (date) => date.toISOString().split('T')[0];
+
+            return {
+                from: convertToBrFormat(formatToDb(firstDay)),
+                to: convertToBrFormat(formatToDb(lastDay))
+            };
+        }
+        function dateRangeDisplay() {           
+            if(!filterData.value.dateRange) return;
+
+            if (typeof filterData.value.dateRange === "string") {
+                return `${filterData.value.dateRange} - ${filterData.value.dateRange}`;
+            }
+
+            const { from, to } = filterData.value.dateRange
+            return from && to ? `${from} - ${to}` : ''
+        }
+        const setDateRangeToFilter = (range, position) => {
+            switch (range) {
+                case 'day':
+                    handleDailyRange(position);
+                    break;
+                case 'week':
+                    handleWeeklyRange(position);
+                    break;
+                case 'month':
+                    handleMonthlyRange(position);
+                    break;
+                default:
+                    return false
+            }
+            getPayments();
+        }
+        const handleDailyRange = (position) => {
+            const today = new Date();
+            const offsetMap = { last: -1, this: 0, next: 1 };
+            const offset = offsetMap[position] ?? 0;
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + offset);
+            const isoDate = targetDate.toISOString().split('T')[0];
+            filterData.value.dateRange = convertToBrFormat(isoDate);
+        };
+        const handleWeeklyRange = (position) => {
+            const today = new Date();
+            const dayOfWeek = today.getDay() || 7;
+            const startOffsetMap = { last: -dayOfWeek - 6, this: -dayOfWeek + 1, next: -dayOfWeek + 8};
+            const startOffset = startOffsetMap[position] ?? -dayOfWeek + 1;
+            const start = new Date(today);
+            start.setDate(today.getDate() + startOffset);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+
+            const toDbFormat = (date) => date.toISOString().split('T')[0];
+            const toBrFormat = (date) => convertToBrFormat(toDbFormat(date));
+
+            filterData.value.dateRange = {
+                from: toBrFormat(start),
+                to: toBrFormat(end)
+            };
+        };
+        const handleMonthlyRange = (position) => {
+            const today = new Date();
+            const monthOffsetMap = { last: -1, this: 0, next: 1};
+            const offset = monthOffsetMap[position] ?? 0;
+            const start = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+            const end = new Date(today.getFullYear(), today.getMonth() + offset + 1, 0);
+
+            const toDbFormat = (date) => date.toISOString().split('T')[0];
+            const toBrFormat = (date) => convertToBrFormat(toDbFormat(date));
+
+            filterData.value.dateRange = {
+                from: toBrFormat(start),
+                to: toBrFormat(end)
+            };
+        };
+
+        const handleCalendarDateChange = (newRange) => {
+            if(newRange == null) return;            
+            getPayments();
+        };
+
         return {
             headerProps,
             rows,
             columns,
             changeStatusData,
+            filterData,
+            dateRangeDisplay,
+            setTypeToFilter,
+            setDateRangeToFilter,
             handleChangeStatusTransaction,
             handleEditTransaction,
             handleDestroyTransaction,
-            isOverdue,
-            getPaymentStatus,
-            confirmChangeStatus
+            confirmChangeStatus,
+            handleCalendarDateChange
         }
     }
 })
