@@ -7,22 +7,26 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
+
+        <q-form class="row q-gutter-sm q-mb-md">
+            <div class="col-auto">
+                <q-select
+                outlined
+                v-model="filter.type"
+                :options="filterOptions"
+                option-value="id"
+                option-label="name"
+                map-options
+                emit-value
+                dense
+                @update:model-value="onFilterChange"
+                style="min-width: 150px"
+                />
+            </div>
+        </q-form>
         
         <q-table :rows="rows" :columns="columns" row-key="name" :rows-per-page-options="[0]">
-            <template v-slot:top-right>
-                <q-select
-                    outlined
-                    v-model="filter.type"
-                    :options="filterOptions"
-                    option-value="id"
-                    option-label="name"
-                    map-options
-                    emit-value
-                    dense
-                    @update:model-value="onFilterChange"
-                    style="min-width: 150px"
-                />
-            </template>
+      
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
