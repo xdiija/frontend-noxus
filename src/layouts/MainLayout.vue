@@ -51,7 +51,7 @@ export default defineComponent({
 
     setup () {
         const router = useRouter()
-        const leftDrawerOpen = ref(true)
+        const leftDrawerOpen = ref(false)
         const { getUser, getMenus, clearAuth } = authService()
         const handleLinkClick = (route) => {
 			if (route === '/login') clearAuth();

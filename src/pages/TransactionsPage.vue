@@ -17,12 +17,13 @@
             <q-tab name="expense" label="Contas a Pagar" @click="setTypeToFilter('expense')"/>
             <q-tab name="income" label="Contas a Receber" @click="setTypeToFilter('income')"/>
             <q-tab name="all" label="Todos os Lançamentos" @click="setTypeToFilter('all')" />
+
         </q-tabs>
 
         <q-form class="row q-col-gutter-sm q-mb-md">
             <q-input
+                label="Período"
                 class="col-md-3 col-xs-12"
-                filled
                 dense
                 :model-value="dateRangeDisplay()"
                 readonly
@@ -117,10 +118,55 @@
                     </q-icon>
                 </template>
             </q-input>
-        
+            <q-select
+                label="Considerar Data"
+                class="col-md-3 col-xs-12"
+                dense
+                v-model="filterData.dateFilterOption"
+                :options="selectOptions.dateMode"
+                option-label="name"
+                option-value="id"
+                emit-value
+                map-options
+                @update:model-value="handleDateOptionChange"
+            />
+            <q-select
+                label="Contas"
+                class="col-md-3 col-xs-12"
+                dense
+                v-model="filterData.account"
+                :options="selectOptions.account"
+                option-label="name"
+                option-value="id"
+                multiple
+                emit-value
+                map-options
+                @update:model-value="(selected) => handleMultiSelection(selected, 'account')"
+            />
+            <q-select
+                label="Status"
+                class="col-md-3 col-xs-12"
+                dense
+                v-model="filterData.status"
+                :options="selectOptions.status"
+                option-label="name"
+                option-value="id"
+                multiple
+                emit-value
+                map-options
+                @update:model-value="(selected) => handleMultiSelection(selected, 'status')"
+            />
         </q-form>
 
-        <q-table :rows="rows" :columns="columns" row-key="name" :rows-per-page-options="[0]">
+        <q-table
+            :rows="rows"
+            :columns="columns"
+            row-key="id"
+            v-model:pagination="pagination"
+            :loading="loading"
+            :rows-per-page-options="[5, 10, 20]"
+            @request="onRequest"
+        >
             
             <template v-slot:body-cell-due_date="props">
                 <q-td :props="props" 
@@ -147,7 +193,7 @@
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         :icon="props.row.status.name === 'Pago' ? 'toggle_on' : 'toggle_off'"
-                        :color="props.row.status.name === 'Pago' ? 'positive' : 'negative'"
+                        color="positive"
                         dense size="sm"
                         @click="handleChangeStatusTransaction(props.row.id, props.row.status)">
                         <q-tooltip class="bg-accent">
@@ -160,7 +206,7 @@
                         dense size="sm"
                         @click="handleEditTransaction(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Editar</q-tooltip>
+                        <q-tooltip class="bg-warning">Editar</q-tooltip>
                     </q-btn>
                     <q-btn
                         icon="delete"
@@ -168,7 +214,7 @@
                         dense size="sm"
                         @click="handleDestroyTransaction(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Excluir</q-tooltip>
+                        <q-tooltip class="bg-negative">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
             </template>
@@ -233,6 +279,7 @@ import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 import currency from '../utils/currency';
 import dateHelper from '../utils/dateHelper';
+import accountsService from 'src/services/accountsService'
 
 const headerProps = {
     title: 'Movimentações',
@@ -258,6 +305,12 @@ export default defineComponent({
         const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const rows = ref([])
         const { list, changeStatus, destroy } = transactionsService()
+        const loading = ref(false);
+        const pagination = ref({
+            page: 1,
+            rowsPerPage: 5,
+            rowsNumber: 0
+        });
 
         const columns = [
             {
@@ -317,9 +370,19 @@ export default defineComponent({
             }
         ]
 
-        onMounted(() => {
-            getPayments()
-        })
+        const selectOptions = ref({
+            account: [],
+            status: [
+                {id: 'all', name: 'Todos'},
+                {id: 'overdue', name: 'Vencido'},
+                {id: 'pending', name: 'Pendente'},
+                {id: 'paid', name: 'Pago'}
+            ],
+            dateMode: [
+                {id: 'due_date', name: 'Data de Vencimento'},
+                {id: 'created_at', name: 'Data de Lançamento'}
+            ]
+        });
 
         const changeStatusData = ref({
             id: null,
@@ -333,79 +396,78 @@ export default defineComponent({
 
         const filterData = ref({
             type: 'all',
-            account: 'all',
-            status: 'all',
+            refresh: {account: false, status: false},
+            account: ["all"],
+            status: ['all'],
+            dateFilterOption: 'due_date',
             dateRange: getCurrentMonthRange()
         })
 
-        const handleChangeStatusTransaction = (id, status) => {
-            changeStatusData.value.id = id
-            changeStatusData.value.newStatus = status.id == 1 ? 2 : 1;
-            changeStatusData.value.dialogStatus = true
-            changeStatusData.value.title = 'Confirmação';
-            status.name === 'Pago' ? setPaymentAsPendent() : setPaymentAsPaid();
-        }
+        onMounted(() => {
+            getPayments()
+            getAccounts()
+        })
 
-        const setPaymentAsPaid = () => {
-            changeStatusData.value.showDatePicker = true;
-            changeStatusData.value.date = null;
-            changeStatusData.value.description = 'Deseja marcar este pagamento como pago?';
-        }
+        const onRequest = (params) => {
+            const { page, rowsPerPage } = params.pagination;
+            pagination.value.page = page;
+            pagination.value.rowsPerPage = rowsPerPage;
+            getPayments();
+        };
 
-        const setPaymentAsPendent = () => {
-            changeStatusData.value.showDatePicker = false;
-            changeStatusData.value.date = true;
-            changeStatusData.value.description = 'Deseja marcar este pagamento como pendente?';
-        }
-
-        const confirmChangeStatus = async () => {
-           
-            changeStatusData.value.dialogStatus = false
-            const params = { status: changeStatusData.value.newStatus}
-
-            if(changeStatusData.value.newStatus == 2){
-                params["payment_date"] = convertToDbFormat(changeStatusData.value.date)
-            }           
-                        
+        const getPayments = async () => {     
+            loading.value = true;         
             try {
-                await changeStatus(changeStatusData.value.id, params, '/payments')
-                notifySuccess('Status alterado com sucesso!')
-                await getPayments()
+                const { data } = await list('/get-payments', getReqParams())     
+                rows.value = data.data;
+                pagination.value.rowsNumber = data.meta.total;
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
-                })           
+                })
+            } finally {
+                loading.value = false;
             }
         }
 
-        const getPayments = async () => {
-            console.log('getPayments');
-            
+        const getAccounts = async () => {
             try {
-                const { data } = await list('/get-payments', getReqParams())     
-                rows.value = data.data
-            } catch (error) {
+                const { list: listAccounts } = accountsService();
+                const { data } = await listAccounts();
+                selectOptions.value.account = [
+                    { id: "all", name: "Todas" }, 
+                    ...data.data
+                ];
                 
+            } catch (error) {
+                notifyError(error.response.data.message);
             }
         }
 
         const getReqParams = () => {
            
-            const params = {};
-            if (filterData.value.type != 'all') params.type = filterData.value.type;
-            if (filterData.value.account != 'all') params.account = filterData.value.account;
+            const queryParams = {
+                page: pagination.value.page,
+                per_page: pagination.value.rowsPerPage,
+            };
+
+            if (filterData.value.type != 'all') queryParams.type = filterData.value.type;
+            if (filterData.value.account != 'all') queryParams.account = filterData.value.account;
+            if (filterData.value.status != 'all') queryParams.status = filterData.value.status;
 
             if (typeof filterData.value.dateRange == "string") {
-                params.date_from = convertToDbFormat(filterData.value.dateRange);
-                params.date_to = convertToDbFormat(filterData.value.dateRange);
+                queryParams.date_from = convertToDbFormat(filterData.value.dateRange);
+                queryParams.date_to = convertToDbFormat(filterData.value.dateRange);
             }
 
             if (typeof filterData.value.dateRange != "string") {
-                params.date_from = convertToDbFormat(filterData.value.dateRange.from);
-                params.date_to = convertToDbFormat(filterData.value.dateRange.to);
-            }          
+                queryParams.date_from = convertToDbFormat(filterData.value.dateRange.from);
+                queryParams.date_to = convertToDbFormat(filterData.value.dateRange.to);
+            }
 
-            return params;
+            queryParams.date_filter_option = filterData.value.dateFilterOption;
+
+            return queryParams;
         }
 
         const handleEditTransaction = (id) => {
@@ -430,11 +492,74 @@ export default defineComponent({
             }
         }
 
+        const handleDateOptionChange = (selected) => {         
+            filterData.value.dateFilterOption = selected;
+            getPayments();
+        }
+        const handleMultiSelection = (selected, filterKey) => {         
+           
+            if (selected.length == 0 || selected.at(-1) == "all") {
+                filterData.value[filterKey] = ["all"]; 
+
+                if(filterData.value.refresh[filterKey]){
+                    filterData.value.refresh[filterKey] = false;
+                    getPayments();
+                } 
+                
+                return;
+            }
+
+            filterData.value.refresh[filterKey] = true;
+            filterData.value[filterKey] = selected.filter(id => id !== "all");
+
+            if (filterData.value[filterKey].length === selectOptions.value[filterKey].length - 1) {
+                filterData.value.refresh[filterKey] = false;
+                filterData.value[filterKey] = ["all"];
+            }
+
+            getPayments();
+        }
+    
+        const handleChangeStatusTransaction = (id, status) => {
+            changeStatusData.value.id = id
+            changeStatusData.value.newStatus = status.id == 1 ? 2 : 1;
+            changeStatusData.value.dialogStatus = true
+            changeStatusData.value.title = 'Confirmação';
+            status.name === 'Pago' ? setPaymentAsPendent() : setPaymentAsPaid();
+        }
+        const setPaymentAsPaid = () => {
+            changeStatusData.value.showDatePicker = true;
+            changeStatusData.value.date = null;
+            changeStatusData.value.description = 'Deseja marcar este pagamento como pago?';
+        }
+        const setPaymentAsPendent = () => {
+            changeStatusData.value.showDatePicker = false;
+            changeStatusData.value.date = true;
+            changeStatusData.value.description = 'Deseja marcar este pagamento como pendente?';
+        }
+        const confirmChangeStatus = async () => {
+           
+            changeStatusData.value.dialogStatus = false
+            const params = { status: changeStatusData.value.newStatus}
+
+            if(changeStatusData.value.newStatus == 2){
+                params["payment_date"] = convertToDbFormat(changeStatusData.value.date)
+            }           
+                        
+            try {
+                await changeStatus(changeStatusData.value.id, params, '/payments')
+                notifySuccess('Status alterado com sucesso!')
+                await getPayments()
+            } catch (error) {
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })           
+            }
+        }
         const setTypeToFilter = (type) => {
             filterData.value.type = type;
             getPayments();
         }
-
         function getCurrentMonthRange() {
             const now = new Date();
             const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -514,7 +639,6 @@ export default defineComponent({
                 to: toBrFormat(end)
             };
         };
-
         const handleCalendarDateChange = (newRange) => {
             if(newRange == null) return;            
             getPayments();
@@ -526,6 +650,12 @@ export default defineComponent({
             columns,
             changeStatusData,
             filterData,
+            selectOptions,
+            pagination,
+            loading,
+            onRequest,
+            handleDateOptionChange,
+            handleMultiSelection,
             dateRangeDisplay,
             setTypeToFilter,
             setDateRangeToFilter,

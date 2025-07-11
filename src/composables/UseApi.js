@@ -34,21 +34,25 @@ export default function useApi(url) {
     }
 
     const buildQueryParams = (objParams) => {
-        let strParams = "";
+        if (!objParams || typeof objParams !== 'object') return '';
 
-        if (typeof objParams === 'object' && objParams !== null) {
-            const arrParams = [];
-            for (const key in objParams) {
-                if (objParams.hasOwnProperty(key)) {
-                    arrParams.push(`${key}=${objParams[key]}`);
-                }
+        const params = new URLSearchParams();
+
+        for (const key in objParams) {
+            if (Array.isArray(objParams[key])) {
+                // Handle array values (account: [1, 2] → account[]=1&account[]=2)
+                objParams[key].forEach(value => {
+                    params.append(`${key}[]`, value);
+                });
+            } else if (objParams[key] !== undefined && objParams[key] !== null) {
+                params.append(key, objParams[key]);
             }
-
-            strParams = `?${arrParams.join('&')}`;
         }
 
-        return strParams;
-    }
+        const queryString = params.toString();
+        console.log(queryString);
+        return queryString ? `?${queryString}` : '';
+    };
 
     const refreshToken = async (url) => {
         const arrIgnore = ['auth'];
