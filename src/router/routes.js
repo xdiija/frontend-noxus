@@ -87,9 +87,9 @@ const routes = [
                 component: () => import('src/pages/TransactionsPage.vue')
             },
             {
-                path: 'transactions-form/:id?',
-                name: 'transactionsForm',
-                component: () => import('src/pages/TransactionsForm.vue')
+                path: 'transactions-form-expense/:id?',
+                name: 'transactionsFormExpense',
+                component: () => import('src/pages/TransactionsFormExpense.vue')
             },
         ]
     },

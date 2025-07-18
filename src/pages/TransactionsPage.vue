@@ -3,9 +3,10 @@
         <router-view />
         <ViewHeader
             :title="headerProps.title"
-            :btnTo="headerProps.btnTo"
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
+            :customClick="true"
+            @custom-click="showTransactionTypeDialog"
         />
 
         <q-tabs
@@ -283,7 +284,6 @@ import accountsService from 'src/services/accountsService'
 
 const headerProps = {
     title: 'Movimentações',
-    btnTo: 'transactionsForm',
     btnIcon: 'add',
     btnName: 'Adicionar'
 }
@@ -560,6 +560,7 @@ export default defineComponent({
             filterData.value.type = type;
             getPayments();
         }
+
         function getCurrentMonthRange() {
             const now = new Date();
             const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -571,6 +572,7 @@ export default defineComponent({
                 to: convertToBrFormat(formatToDb(lastDay))
             };
         }
+        
         function dateRangeDisplay() {           
             if(!filterData.value.dateRange) return;
 
@@ -644,6 +646,38 @@ export default defineComponent({
             getPayments();
         };
 
+        const showTransactionTypeDialog = () => {
+            $q.dialog({
+                title: 'Tipo de Movimentação',
+                message: 'Selecione o tipo que deseja adicionar:',
+                size: 'small',
+                options: {
+                type: 'radio',
+                model: 'Income',
+                inline: true,
+                items: [
+                    { label: 'Receita', value: 'Income', color: 'positive' },
+                    { label: 'Despesa', value: 'Expense', color: 'negative' },
+                    { label: 'Transferência', value: 'Transferency', color: 'secondary' },
+                ]
+                },
+                cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true 
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary',
+                    },
+                persistent: true
+            }).onOk(type => {
+                router.push({
+                    name: `transactionsForm${type}`
+                })
+            })
+        }
+
         return {
             headerProps,
             rows,
@@ -663,7 +697,8 @@ export default defineComponent({
             handleEditTransaction,
             handleDestroyTransaction,
             confirmChangeStatus,
-            handleCalendarDateChange
+            handleCalendarDateChange,
+            showTransactionTypeDialog
         }
     }
 })

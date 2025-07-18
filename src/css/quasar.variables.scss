@@ -27,3 +27,17 @@ $positive  : #2f4f4f;
 $negative  : #730000;
 $info      : #5777C0;
 $warning   : #734D00;
+
+
+
+
+
+
+$warning50percent: rgba($warning, 0.5);
+
+// Then create a CSS class
+.warning-bg {
+  .q-field__control {
+    border: 2px solid $warning !important;
+  }
+}
