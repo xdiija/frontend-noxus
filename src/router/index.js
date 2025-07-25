@@ -3,6 +3,11 @@ import { createRouter, createMemoryHistory, createWebHistory, createWebHashHisto
 import routes from './routes'
 import authService from 'src/services/authService'
 
+let previousRoute = null;
+export function getPreviousRoute() {
+    return previousRoute;
+}
+
 export default route(function (/* { store, ssrContext } */) {
     const createHistory = process.env.SERVER
         ? createMemoryHistory
@@ -15,6 +20,8 @@ export default route(function (/* { store, ssrContext } */) {
     })
 
     Router.beforeEach(async (to, from, next) => {
+
+        previousRoute = from;
 
         if (to.matched.some(record => record.meta.requiresAuth)) {
             const auth = authService()

@@ -50,7 +50,6 @@ export default function useApi(url) {
         }
 
         const queryString = params.toString();
-        console.log(queryString);
         return queryString ? `?${queryString}` : '';
     };
 

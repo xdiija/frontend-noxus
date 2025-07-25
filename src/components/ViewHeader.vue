@@ -8,7 +8,8 @@
                 color="primary"
                 :icon="btnIcon"
                 :label="btnName"
-                :to="{ name: btnTo }"
+                :to="customClick ? undefined : { name: btnTo }"
+                @click="customClick ? $emit('custom-click') : null"
             />
         </div>
     </header>
@@ -34,6 +35,10 @@ export default defineComponent({
         btnIcon: {
             type: String,
             default: ''
+        },
+        customClick: {
+            type: Boolean,
+            default: false
         }
     },
     computed: {
