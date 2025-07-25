@@ -25,7 +25,7 @@
                         dense size="sm"
                         @click="handleEditAccount(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">
+                        <q-tooltip class="bg-warning">
                             Editar
                         </q-tooltip>
                     </q-btn>
@@ -35,7 +35,7 @@
                         dense size="sm"
                         @click="handleDestroy(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Excluir</q-tooltip>
+                        <q-tooltip class="bg-negative">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
 

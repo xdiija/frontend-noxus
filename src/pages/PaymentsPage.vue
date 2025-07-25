@@ -15,9 +15,9 @@
             class="bg-white text-primary q-mb-md"
             inline-label
         >
-            <q-tab name="expense" label="Saídas" @click="setTypeToFilter('expense')"/>
-            <q-tab name="income" label="Entradas" @click="setTypeToFilter('income')"/>
-            <q-tab name="all" label="Todas as Transações" @click="setTypeToFilter('all')" />
+            <q-tab name="expense" label="Contas a Pagar" @click="setTypeToFilter('expense')"/>
+            <q-tab name="income" label="Contas a Receber" @click="setTypeToFilter('income')"/>
+            <q-tab name="all" label="Todos os Lançamentos" @click="setTypeToFilter('all')" />
 
         </q-tabs>
 
@@ -120,31 +120,42 @@
                 </template>
             </q-input>
             <q-select
-                label="Tipo de pagamento"
+                label="Considerar Data"
                 class="col-md-3 col-xs-12"
                 dense
-                v-model="filterData.payment_type"
-                :options="selectOptions.payment_type"
+                v-model="filterData.dateFilterOption"
+                :options="selectOptions.dateMode"
                 option-label="name"
                 option-value="id"
-                multiple
                 emit-value
                 map-options
-                @update:model-value="(selected) => handleMultiSelection(selected, 'payment_type')"
+                @update:model-value="handleDateOptionChange"
             />
             <q-select
-                v-if="filterData.type != 'all'"
-                label="Categoria"
+                label="Contas"
                 class="col-md-3 col-xs-12"
                 dense
-                v-model="filterData.category"
-                :options="selectOptions.category"
+                v-model="filterData.account"
+                :options="selectOptions.account"
                 option-label="name"
                 option-value="id"
                 multiple
                 emit-value
                 map-options
-                @update:model-value="(selected) => handleMultiSelection(selected, 'category')"
+                @update:model-value="(selected) => handleMultiSelection(selected, 'account')"
+            />
+            <q-select
+                label="Status"
+                class="col-md-3 col-xs-12"
+                dense
+                v-model="filterData.status"
+                :options="selectOptions.status"
+                option-label="name"
+                option-value="id"
+                multiple
+                emit-value
+                map-options
+                @update:model-value="(selected) => handleMultiSelection(selected, 'status')"
             />
         </q-form>
 
@@ -158,64 +169,111 @@
             @request="onRequest"
         >
             
-            <template v-slot:body-cell-total_amount="props">
+            <template v-slot:body-cell-due_date="props">
                 <q-td :props="props" 
-                    :class="[
-                        'text-weight-bold',
-                        props.row.category.type == 'income'
-                            ? 'text-positive' : 'text-negative'
-                    ]"
-                >
-                    <q-icon :name="props.row.category.type === 'income' ? 'add' : 'remove'" />
+                      :class="[
+                            props.row.status.name == 'Vencido' ? 'text-negative' : 'text-positive',
+                            'text-weight-bold'
+                        ]">
                     {{ props.value }}
                 </q-td>
             </template>
-             <template v-slot:body-cell-actions="props">
+            <template v-slot:body-cell-amount="props">
+                <q-td :props="props" 
+                    :class="[
+                        'text-weight-bold',
+                        props.row.transaction.type == 'income'
+                            ? 'text-positive' : 'text-negative'
+                    ]"
+                >
+                    <q-icon :name="props.row.transaction.type === 'income' ? 'add' : 'remove'" />
+                    {{ props.value }}
+                </q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
-                        icon="edit"
-                        color="warning"
+                        :icon="props.row.status.name === 'Pago' ? 'toggle_on' : 'toggle_off'"
+                        color="positive"
                         dense size="sm"
-                        @click="handleEdit(props.row.id)"
-                    >
-                        <q-tooltip class="bg-warning">
-                            Editar
+                        @click="handleChangePaymentStatus(props.row.id, props.row.status)">
+                        <q-tooltip class="bg-accent">
+                            {{ props.row.status.name === 'Pago' ? 'Desmarcar como Pago' : 'Marcar como Pago' }}
                         </q-tooltip>
                     </q-btn>
-                    <q-btn
-                        icon="delete"
-                        color="negative"
-                        dense size="sm"
-                        @click="handleDestroy(props.row.id)"
-                    >
-                        <q-tooltip class="bg-negative">Excluir</q-tooltip>
-                    </q-btn>
                 </q-td>
-
             </template>
         </q-table>
+        <template>
+            <q-dialog v-model="changeStatusData.dialogStatus" persistent>
+                <q-card style="min-width: 350px">
+                <q-card-section>
+                    <div class="text-h6">{{ changeStatusData.title }}</div>
+                    <div class="text-subtitle2 q-mt-sm">{{ changeStatusData.description }}</div>
+                </q-card-section>
+
+                <q-card-section v-if="changeStatusData.showDatePicker">
+                    <q-input
+                    v-model="changeStatusData.date"
+                    label="Selecione a data"
+                    readonly
+                    dense
+                    filled
+                    :rules="[val => !!val || 'A data é obrigatória']"
+                    >
+                    <template v-slot:append>
+                        <q-icon name="event" class="cursor-pointer" />
+                    </template>
+
+                    <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                        <q-date
+                        v-model="changeStatusData.date"
+                        mask="DD/MM/YYYY"
+                        today-btn
+                        >
+                        <div class="row items-center justify-end q-gutter-sm">
+                            <q-btn v-close-popup label="Fechar" color="primary" outline />
+                        </div>
+                        </q-date>
+                    </q-popup-proxy>
+                    </q-input>
+                </q-card-section>
+
+                <q-card-actions align="right">
+                    <q-btn flat label="Cancelar" color="primary" v-close-popup />
+                    <q-btn
+                    flat
+                    label="Confirmar"
+                    color="primary"
+                    :disable="!changeStatusData.date"
+                    @click="confirmChangeStatus"
+                    />
+                </q-card-actions>
+                </q-card>
+            </q-dialog>
+        </template>
     </div>
 </template>
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
 import transactionsService from 'src/services/transactionsService'
-import transactionCategoriesService from 'src/services/transactionCategoriesService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
 import currency from '../utils/currency';
 import dateHelper from '../utils/dateHelper';
+import accountsService from 'src/services/accountsService'
 
 const headerProps = {
-    title: 'Transações',
+    title: 'Lançamentos',
     btnIcon: 'add',
     btnName: 'Adicionar'
 }
 
 export default defineComponent({
-    name: 'TransactionsPage',
+    name: 'PaymentsPage',
     components: { ViewHeader },
     props: {
         user: {
@@ -227,11 +285,10 @@ export default defineComponent({
         const $q = useQuasar()
         const { notifySuccess, notifyError } = notifications()
         const router = useRouter()
-        const { formatBRL, usdToCents, formatUSD } = currency()
-        const { list: listCategories } = transactionCategoriesService()
+        const { formatBRL } = currency()
         const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const rows = ref([])
-        const { list, destroy } = transactionsService()
+        const { list, changeStatus, destroy } = transactionsService()
         const loading = ref(false);
         const pagination = ref({
             page: 1,
@@ -241,13 +298,6 @@ export default defineComponent({
 
         const columns = [
             {
-                label: 'ID',
-                field: 'id',
-                name: 'id',
-                sortable: true,
-                align: 'left'
-            },
-            {
                 label: 'Lançamento',
                 field: 'created_at',
                 name: 'created_at',
@@ -255,32 +305,39 @@ export default defineComponent({
                 align: 'left'
             },
             {
-                label: 'Categoria',
-                field: row => row.category.name,
+                label: 'Vencimento',
+                field: 'due_date',
                 name: 'due_date',
                 sortable: true,
                 align: 'left'
             },
             {
-                label: 'Descrição',
-                field: 'description',
-                name: 'description',
+                label: 'Pagamento',
+                field: row => row.payment_date ?? row.status.name,
+                name: 'payment_date',
                 sortable: true,
                 align: 'left'
             },
             {
-                label: 'Parcelas',
-                field: row => getPaymentsInfo(row.payments).totalAndPaid,
-                name: 'payments',
+                label: 'Forma de Pagamento',
+                field: row => row.payment_method.name,
+                name: 'category',
                 sortable: true,
                 align: 'left'
             },
             {
-                label: 'Valor Total',
-                field: row => getPaymentsInfo(row.payments).brTotalAmount,
-                name: 'total_amount',
+                label: 'Conta',
+                field: row => row.account.name,
+                name: 'account',
                 sortable: true,
                 align: 'left'
+            },
+            {
+                label: 'Valor',
+                field: row => formatBRL(row.amount),
+                name: 'amount',
+                sortable: true,
+                align: 'left',
             },
             {
                 label: 'Ações',
@@ -291,57 +348,55 @@ export default defineComponent({
         ]
 
         const selectOptions = ref({
-            payment_type: [
+            account: [],
+            status: [
                 {id: 'all', name: 'Todos'},
-                {id: 'single', name: 'Único'},
-                {id: 'installment', name: 'Parcelado'},
-                {id: 'recurrent', name: 'Recorrente'}
+                {id: 'overdue', name: 'Vencido'},
+                {id: 'pending', name: 'Pendente'},
+                {id: 'paid', name: 'Pago'}
             ],
-            category: []
+            dateMode: [
+                {id: 'due_date', name: 'Data de Vencimento'},
+                {id: 'created_at', name: 'Data de Lançamento'}
+            ]
         });
+
+        const changeStatusData = ref({
+            id: null,
+            newStatus: {},
+            dialogStatus: null,
+            date: null,
+            title: null,
+            description: null,
+            showDatePicker: null,
+        })
 
         const filterData = ref({
             type: 'all',
-            payment_type: ['all'],
-            refresh: { payment_type: false, category: false },
-            category: ['all'],
+            refresh: {account: false, status: false},
+            account: ["all"],
+            status: ['all'],
+            dateFilterOption: 'due_date',
             dateRange: getCurrentMonthRange()
         })
 
-        onMounted(async () => {
-            await fetchCategories()
-            getTransactions()
+        onMounted(() => {
+            getPayments()
+            getAccounts()
         })
 
         const onRequest = (params) => {
             const { page, rowsPerPage } = params.pagination;
             pagination.value.page = page;
             pagination.value.rowsPerPage = rowsPerPage;
-            getTransactions();
+            getPayments();
         };
 
-        const fetchCategories = async () => {
-            try {
-                let categoryType;
-                if(filterData.value.type != 'all') categoryType = filterData.value.type; 
-                const categoriesResponse = await listCategories('', { type: categoryType })
-
-                selectOptions.value.category = [
-                    { id: "all", name: "Todas" }, 
-                    ...categoriesResponse.data.data
-                ];
-            } catch (error) {
-                console.log(error);
-                
-                notifyError('Erro ao carregar categorias ou contas.')
-            }
-        };
-
-        const getTransactions = async () => {     
+        const getPayments = async () => {     
             loading.value = true;         
             try {
-                const { data } = await list('', getReqParams()) 
-                                
+                const { data } = await list('/get-payments', getReqParams())     
+                
                 rows.value = data.data;
                 pagination.value.rowsNumber = data.meta.total;
             } catch (error) {
@@ -353,6 +408,20 @@ export default defineComponent({
             }
         }
 
+        const getAccounts = async () => {
+            try {
+                const { list: listAccounts } = accountsService();
+                const { data } = await listAccounts();
+                selectOptions.value.account = [
+                    { id: "all", name: "Todas" }, 
+                    ...data.data
+                ];
+                
+            } catch (error) {
+                notifyError(error.response.data.message);
+            }
+        }
+
         const getReqParams = () => {
            
             const queryParams = {
@@ -361,8 +430,8 @@ export default defineComponent({
             };
 
             if (filterData.value.type != 'all') queryParams.type = filterData.value.type;
-            if (filterData.value.category != 'all') queryParams.category = filterData.value.category;
-            if (filterData.value.payment_type != 'all') queryParams.payment_type = filterData.value.payment_type;
+            if (filterData.value.account != 'all') queryParams.account = filterData.value.account;
+            if (filterData.value.status != 'all') queryParams.status = filterData.value.status;
 
             if (typeof filterData.value.dateRange == "string") {
                 queryParams.date_from = convertToDbFormat(filterData.value.dateRange);
@@ -374,29 +443,14 @@ export default defineComponent({
                 queryParams.date_to = convertToDbFormat(filterData.value.dateRange.to);
             }
 
+            queryParams.date_filter_option = filterData.value.dateFilterOption;
+
             return queryParams;
         }
 
-        const getPaymentsInfo = (payments) => {
-            const paymentsInfo = {
-                totalCount: 0, paidCount: 0, totalAmount: 0, totalAndPaid: null, brTotalAmount: null
-            };
-
-            payments.forEach(payment => {
-                paymentsInfo.totalCount++;
-                paymentsInfo.totalAmount = paymentsInfo.totalAmount + usdToCents(payment.amount);                
-                if(payment.status == 2) paymentsInfo.paidCount++;
-            });
-
-            paymentsInfo.totalAndPaid = `${paymentsInfo.paidCount}/${paymentsInfo.totalCount}`;
-            paymentsInfo.brTotalAmount = formatBRL(paymentsInfo.totalAmount);
-            
-            return paymentsInfo;
-        }
-
-        const handleCategoryFilterChange = (selected) => {         
-            filterData.value.category = selected;
-            getTransactions();
+        const handleDateOptionChange = (selected) => {         
+            filterData.value.dateFilterOption = selected;
+            getPayments();
         }
         const handleMultiSelection = (selected, filterKey) => {         
            
@@ -405,7 +459,7 @@ export default defineComponent({
 
                 if(filterData.value.refresh[filterKey]){
                     filterData.value.refresh[filterKey] = false;
-                    getTransactions();
+                    getPayments();
                 } 
                 
                 return;
@@ -419,14 +473,50 @@ export default defineComponent({
                 filterData.value[filterKey] = ["all"];
             }
 
-            getTransactions();
+            getPayments();
         }
+    
+        const handleChangePaymentStatus = (id, status) => {
+            changeStatusData.value.id = id
+            changeStatusData.value.newStatus = status.id == 1 ? 2 : 1;
+            changeStatusData.value.dialogStatus = true
+            changeStatusData.value.title = 'Confirmação';
+            status.name === 'Pago' ? setPaymentAsPendent() : setPaymentAsPaid();
+        }
+        const setPaymentAsPaid = () => {
+            changeStatusData.value.showDatePicker = true;
+            changeStatusData.value.date = null;
+            changeStatusData.value.description = 'Deseja marcar este pagamento como pago?';
+        }
+        const setPaymentAsPendent = () => {
+            changeStatusData.value.showDatePicker = false;
+            changeStatusData.value.date = true;
+            changeStatusData.value.description = 'Deseja marcar este pagamento como pendente?';
+        }
+        const confirmChangeStatus = async () => {
+           
+            changeStatusData.value.dialogStatus = false
+            const params = { status: changeStatusData.value.newStatus}
 
+            if(changeStatusData.value.newStatus == 2){
+                params["payment_date"] = convertToDbFormat(changeStatusData.value.date)
+            }           
+                        
+            try {
+                await changeStatus(changeStatusData.value.id, params, '/payments')
+                notifySuccess('Status alterado com sucesso!')
+                await getPayments()
+            } catch (error) {
+                console.log(error.response.data);
+                
+                Object.keys(error.response.data.errors).forEach(key => {
+                    notifyError(error.response.data.errors[key])
+                })           
+            }
+        }
         const setTypeToFilter = (type) => {
             filterData.value.type = type;
-            filterData.value.category = ['all']
-            fetchCategories();
-            getTransactions();
+            getPayments();
         }
 
         function getCurrentMonthRange() {
@@ -465,7 +555,7 @@ export default defineComponent({
                 default:
                     return false
             }
-            getTransactions();
+            getPayments();
         }
         const handleDailyRange = (position) => {
             const today = new Date();
@@ -511,7 +601,7 @@ export default defineComponent({
         };
         const handleCalendarDateChange = (newRange) => {
             if(newRange == null) return;            
-            getTransactions();
+            getPayments();
         };
 
         const showTransactionTypeDialog = () => {
@@ -550,16 +640,19 @@ export default defineComponent({
             headerProps,
             rows,
             columns,
+            changeStatusData,
             filterData,
             selectOptions,
             pagination,
             loading,
             onRequest,
-            handleCategoryFilterChange,
+            handleDateOptionChange,
             handleMultiSelection,
             dateRangeDisplay,
             setTypeToFilter,
             setDateRangeToFilter,
+            handleChangePaymentStatus,
+            confirmChangeStatus,
             handleCalendarDateChange,
             showTransactionTypeDialog
         }

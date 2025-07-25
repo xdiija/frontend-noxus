@@ -11,13 +11,13 @@
             class="row q-col-gutter-sm"
         >
             <q-select
-                label="Pessoa"
+                label="Fornecedor"
                 class="col-md-4 col-xs-12"
                 outlined
-                v-model="form.pessoa"
-                :options="selectOptions.pessoas"
+                v-model="form.supplier_id"
+                :options="selectOptions.people"
                 option-value="id"
-                option-label="name"
+                option-label="nome_fantasia"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -135,7 +135,7 @@
 					hide-pagination
 					virtual-scroll
 					:rows-per-page-options="[0]"
-					style="height: 400px"
+					style="max-height: 400px"
 				>
 				<template v-slot:top-right>
 					<q-btn
@@ -210,6 +210,35 @@
 						</q-td>
 					</template>
 
+					<template v-slot:body-cell-payment_method_id="props">
+						<q-td :props="props">
+							<div class="row items-center no-wrap q-gutter-xs">
+								<q-select
+									v-model="props.row.payment_method_id"
+									:options="selectOptions.payment_methods"
+									option-value="id"
+									option-label="name"
+									emit-value
+									map-options
+									dense
+									class="col-grow"
+								/>
+								<q-btn
+									v-if="form.payments.length > 1"
+									:disabled="!props.row.payment_method_id"
+									icon="check"
+									color="positive"
+									flat
+									dense
+									size="sm"
+									@click="paymentFunctions.replicatePaymentMethods(props.row.payment_method_id)"
+								>
+									<q-tooltip class="bg-positive">Aplicar em todas</q-tooltip>
+								</q-btn>
+							</div>
+						</q-td>
+					</template>
+
 					<template v-slot:body-cell-account_id="props">
 						<q-td :props="props">
 							<div class="row items-center no-wrap q-gutter-xs">
@@ -245,7 +274,7 @@
 								<q-input
 									v-model="props.row.amount"
 									dense
-									:readonly="!props.row.lock"
+									:readonly="form.payments.length > 1 && !props.row.lock"
 									@update:model-value="val => paymentFunctions.handlePaymentAmountInput(val, props.row)"
 								/>
 								<q-checkbox
@@ -274,7 +303,7 @@
                     color="primary"
                     class="float-right q-mr-sm"
                     icon="arrow_back"
-                    :to="{ name: listRoute }"
+                    :to="{ name: headerProps.btnTo }"
                     outline
                 />
 				 <q-btn
@@ -293,22 +322,17 @@
 import { defineComponent, ref, computed, onMounted, watch } from 'vue'
 import transactionsService from 'src/services/transactionsService'
 import transactionCategoriesService from 'src/services/transactionCategoriesService'
+import paymentMethodsService from 'src/services/paymentMethodsService'
 import accountsService from 'src/services/accountsService'
+import suppliersService from 'src/services/suppliersService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import dateHelper from '../utils/dateHelper';
 import notifications from '../utils/notifications'
 import currency from '../utils/currency';
+import { getPreviousRoute } from 'src/router'
 
-const listRoute = 'transactions'
 const viewDescricao = 'Despesa'
-
-const headerProps = {
-    title: '',
-    btnIcon: 'format_list_numbered',
-    btnName: 'Listar',
-    btnTo: listRoute
-}
 
 export default defineComponent({
     name: 'TransactionsFormExpense',
@@ -319,6 +343,8 @@ export default defineComponent({
         const { post, getByID, update } = transactionsService()
         const { list: listCategories } = transactionCategoriesService()
         const { list: listAccounts } = accountsService()
+        const { list: listPaymentMethods } = paymentMethodsService()
+        const { list: listSuppliers } = suppliersService()
         const { notifySuccess, notifyError } = notifications()
         const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const { formatBRL, formatUSD, maskCurrency, usdToCents } = currency()
@@ -326,7 +352,7 @@ export default defineComponent({
         const form = ref({
 			installmentsUpdate: { payment_number: false, start_date: false, total_amount: false },
             type: 'expense',
-            pessoa: null,
+            supplier_id: null,
             category_id: null,
 			costs_center: null,
             description: '',
@@ -342,30 +368,27 @@ export default defineComponent({
 					payment_date: '',
 					account_id: '',
 					payment_method_id: '',
-					amount: 0,
+					amount: 'R$ 0,00',
 					lock: false,
 				}
 			],
         })
 
+		const headerProps = ref({
+			title: '',
+			btnIcon: 'format_list_numbered',
+			btnName: 'Listar',
+			btnTo: 'transactions'
+		})
+
         const selectOptions = ref({
             accounts: [],
             categories: [],
-            pessoas: [
-                {id: 1, name: 'Luis Silva'},
-                {id: 2, name: 'Maria Fernanda Alves'},
-                {id: 3, name: 'Roberto Melchioretto'}
+            people: [],
+			payment_methods: [],
+            payment_type: [ {id: 'single', name: 'Único'}, {id: 'installment', name: 'Parcelado'}, {id: 'recurrent', name: 'Recorrente'}
             ],
-            payment_type: [
-                {id: 'single', name: 'Único'},
-                {id: 'installment', name: 'Parcelado'},
-                {id: 'recurrent', name: 'Recorrente'}
-            ],
-            costs_center: [
-                {id: 1, name: 'Marcenaria'},
-                {id: 2, name: 'Loja'},
-                {id: 3, name: 'Marketing'}
-            ],
+            costs_center: [ {id: 1, name: 'Marcenaria'}, {id: 2, name: 'Loja'}, {id: 3, name: 'Marketing'}],
         });
 
         const isEditMode = computed(() => !!route.params.id)
@@ -376,15 +399,22 @@ export default defineComponent({
             if (route.params.id) {
                 await getTransaction(route.params.id)
             }
+
+			const prev = getPreviousRoute()			
+			if (prev?.name) headerProps.value.btnTo = prev.name;			
         })
 
         const fetchCategoriesAndAccounts = async () => {
             try {
-                const categoriesResponse = await listCategories()
+                const categoriesResponse = await listCategories('', { type: 'expense' })
                 const accountsResponse = await listAccounts()
+                const paymentMethodsResponse = await listPaymentMethods()
+				const suppliersResponse = await listSuppliers()			
 
                 selectOptions.value.categories = categoriesResponse.data.data
                 selectOptions.value.accounts = accountsResponse.data.data
+                selectOptions.value.payment_methods = paymentMethodsResponse.data.data
+                selectOptions.value.people = suppliersResponse.data.data
             } catch (error) {
                 notifyError('Erro ao carregar categorias ou contas.')
             }
@@ -394,21 +424,11 @@ export default defineComponent({
             form.value.id ? updateTransaction() : newTransaction()
         }
 
-        const getTransaction = async (id) => {
+		const newTransaction = async () => {
             try {
-                const { data } = await getByID(id)
-                form.value = data.data
-            } catch (error) {
-                notifyError(error.response.data.message)
-                router.push({ name: listRoute })
-            }
-        }
-
-        const updateTransaction = async () => {
-            try {
-                await update(makePayload(), form.value.id)
-                notifySuccess(`${viewDescricao} atualizada com sucesso!`)
-                router.push({ name: listRoute })
+                await post(makePayload())
+                notifySuccess(`${viewDescricao} criada com sucesso!`)
+                router.push({ name: headerProps.value.btnTo })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
@@ -416,11 +436,21 @@ export default defineComponent({
             }
         }
 
-        const newTransaction = async () => {
+        const getTransaction = async (id) => {
             try {
-                await post(makePayload())
-                notifySuccess(`${viewDescricao} criada com sucesso!`)
-                router.push({ name: listRoute })
+                const { data } = await getByID(id)
+                form.value = data.data
+            } catch (error) {
+                notifyError(error.response.data.message)
+                router.push({ name: headerProps.value.btnTo })
+            }
+        }
+
+        const updateTransaction = async () => {
+            try {
+                await update(makePayload(), form.value.id)
+                notifySuccess(`${viewDescricao} atualizada com sucesso!`)
+                router.push({ name: headerProps.value.btnTo })
             } catch (error) {
                 Object.keys(error.response.data.errors).forEach(key => {
                     notifyError(error.response.data.errors[key])
@@ -429,23 +459,42 @@ export default defineComponent({
         }
 
         const makePayload = () => {
+			const payments = [];
+			form.value.payments.forEach(formPayment => {
+				payments.push(
+					{
+						discount: 0,
+						increase: 0,
+						created_at: convertToDbFormat(formPayment.created_at),
+						due_date: convertToDbFormat(formPayment.due_date),
+						payment_date: convertToDbFormat(formPayment.payment_date),
+						account_id: formPayment.account_id,
+						payment_method_id: formPayment.payment_method_id,
+						amount: formatUSD(formPayment.amount),
+					}
+				)
+			});
+
             return {
-                total_amount: form.value.total_amount,
-                start_date: form.value.start_date,
-                payment_date: form.value.payment_date,
-                description: form.value.description,
+                type: form.value.type,
+                supplier_id: form.value.supplier_id,
                 category_id: form.value.category_id,
-                account_id: form.value.account_id
+                costs_center: form.value.costs_center,
+                description: form.value.description,
+                payment_type: form.value.payment_type,
+                total_amount: form.value.total_amount,
+                payments: payments,
             }
         }
 
         const paymentColumns = [
-			{ name: 'index', label: '#', field: 'index', align: 'left', style: 'width: 5%' },
-			{ name: 'created_at', label: 'Data Lançamento', field: 'created_at', align: 'left', style: 'width: 18%' },
-			{ name: 'due_date', label: 'Data Vencimento', field: 'due_date', align: 'left', style: 'width: 18%' },
-			{ name: 'payment_date', label: 'Data Pagamento', field: 'payment_date', align: 'left', style: 'width: 18%' },
-			{ name: 'account_id', label: 'Conta', field: 'account_id', align: 'left', style: 'width: 25%' },
-			{ name: 'amount', label: 'Valor', field: 'amount', align: 'left' , style: 'width: 16%' },
+			{ name: 'index', label: '#', field: 'index', align: 'left', style: 'width: 4%' },
+			{ name: 'created_at', label: 'Data Lançamento', field: 'created_at', align: 'left', style: 'width: 15%' },
+			{ name: 'due_date', label: 'Data Vencimento', field: 'due_date', align: 'left', style: 'width: 15%' },
+			{ name: 'payment_date', label: 'Data Pagamento', field: 'payment_date', align: 'left', style: 'width: 15%' },
+			{ name: 'payment_method_id', label: 'Forma de Pagamento', field: 'payment_method_id', align: 'left', style: 'width: 18%' },
+			{ name: 'account_id', label: 'Conta', field: 'account_id', align: 'left', style: 'width: 15%' },
+			{ name: 'amount', label: 'Valor', field: 'amount', align: 'left' , style: 'width: 18%' },
 		]
 
 		const updatePayment = (payment) => {
@@ -471,17 +520,14 @@ export default defineComponent({
 		const paymentFunctions = {
 
 			testeee: () => {
-				console.log('form.value.payments');
-				console.log(form.value.payments);
-				console.log('form.value.total_amount');
-				console.log(form.value.total_amount);
+				console.log(makePayload().payments);
 			},
 
 			handlePaymentTypeChange: (type) => {
 				if(type == 'installment'){
 					form.value.payment_number = 2;
 					form.value.total_amount = form.value.payments[0].amount;
-					form.value.payments[0].amount = 0;
+					form.value.start_date = form.value.payments[0].due_date;
 					return;
 				}
 				
@@ -522,23 +568,27 @@ export default defineComponent({
 			},
 
 			createPayments: () => {
-
 				if(!form.value.total_amount || !form.value.start_date) return;
 
-				const installmentValue = formatUSD(form.value.total_amount) / form.value.payment_number;
-				
 				const newPayments = [];
+				
+				const totalCents = usdToCents(formatUSD(form.value.total_amount));
+				const paymentCount = form.value.payment_number;
+				const baseValue = Math.floor(totalCents / paymentCount);
+				const remainder = totalCents % paymentCount;			
 				let dueDate = form.value.start_date;
 
-				for (let i = 0; i < form.value.payment_number; i++) {
-					dueDate = paymentFunctions.generateDueDate(i, dueDate, {type:'months', toAdd: 1});
+				for (let index = 0; index < paymentCount; index++) {
+					let amountCents = baseValue + (index < remainder ? 1 : 0);
+					dueDate = paymentFunctions.generateDueDate(form.value.start_date, index, 'months');
+
 					newPayments.push({
-						index: i + 1,
+						index: index + 1,
 						created_at: getTodaysDate(),
 						due_date: dueDate,
 						payment_date: null,
 						account_id: null,
-						amount: formatBRL(installmentValue.toFixed(2)),
+						amount: formatBRL(amountCents),
 						lock: false,
 					})
 				}
@@ -550,14 +600,13 @@ export default defineComponent({
 				form.value.payments = newPayments
 			},
 
-			generateDueDate: (index, date, interval) => {
-				if(index == 0) return date;
+			generateDueDate: (startDate, index, type) => {
 
-				if(interval.type == 'months'){
-					return convertToBrFormat(paymentFunctions.addMonths(date, interval.toAdd));
+				if(type == 'months'){
+					return convertToBrFormat(paymentFunctions.addMonths(startDate, index));
 				}
 
-				if(interval.type == 'days'){
+				if(type == 'days'){
 					return convertToBrFormat(paymentFunctions.addDays(date, interval.toAdd));
 				}
 	
@@ -566,9 +615,14 @@ export default defineComponent({
 
 			addMonths: (brDate, toAdd) => {
 				const [day, month, year] = brDate.split('/').map(Number);
+				const originalDay = day;
 				const dateObj = new Date(year, month - 1, day);
-				dateObj.setMonth(dateObj.getMonth() + toAdd);
 
+				const newMonth = dateObj.getMonth() + toAdd;
+				dateObj.setMonth(newMonth);
+
+				if (dateObj.getDate() < originalDay) dateObj.setDate(0);
+				
 				const yyyy = dateObj.getFullYear();
 				const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
 				const dd = String(dateObj.getDate()).padStart(2, '0');
@@ -610,17 +664,31 @@ export default defineComponent({
 				}
 
 				const saldoRestanteCents = totalCents - lockedAmountCents;
-				const amountParcelasRestanteCents = saldoRestanteCents / (form.value.payments.length - lockedPaymentsCount)		
+				const paymentCount = form.value.payments.length - lockedPaymentsCount
+				const baseValue = Math.floor(saldoRestanteCents / paymentCount);
+				const remainder = saldoRestanteCents % paymentCount;
 				
-				
+				let unlockedIndex = 0;
+
 				form.value.payments.forEach(payment => {
-					if(!payment.lock) payment.amount = formatBRL(amountParcelasRestanteCents);
+					if (!payment.lock) {
+						const amountCents = baseValue + (unlockedIndex < remainder ? 1 : 0);
+						payment.amount = formatBRL(amountCents);
+						unlockedIndex++;
+					}
 				});
 			},
+			
 
 			replicateAccountToOtherPayments: (accountId) => {
 				form.value.payments.forEach(payment => {
 					payment.account_id = accountId;
+				});
+			},
+
+			replicatePaymentMethods: (paymentMethodId) => {
+				form.value.payments.forEach(payment => {
+					payment.payment_method_id = paymentMethodId;
 				});
 			}
 		}
@@ -658,7 +726,6 @@ export default defineComponent({
 			optionsPaymentDate,
 			paymentFunctions,
             headerProps,
-            listRoute,
             selectOptions,
             paymentColumns,
             updatePayment,

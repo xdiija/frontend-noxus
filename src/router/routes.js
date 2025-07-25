@@ -91,6 +91,11 @@ const routes = [
                 name: 'transactionsFormExpense',
                 component: () => import('src/pages/TransactionsFormExpense.vue')
             },
+            {
+                path: 'payments',
+                name: 'payments',
+                component: () => import('src/pages/PaymentsPage.vue')
+            },
         ]
     },
     {
