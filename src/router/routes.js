@@ -92,6 +92,11 @@ const routes = [
                 component: () => import('src/pages/TransactionsFormExpense.vue')
             },
             {
+                path: 'transactions-form-income/:id?',
+                name: 'transactionsFormIncome',
+                component: () => import('src/pages/TransactionsFormIncome.vue')
+            },
+            {
                 path: 'payments',
                 name: 'payments',
                 component: () => import('src/pages/PaymentsPage.vue')
