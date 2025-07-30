@@ -11,13 +11,13 @@
             class="row q-col-gutter-sm"
         >
             <q-select
-                label="Fornecedor"
+                label="Cliente"
                 class="col-md-4 col-xs-12"
                 outlined
-                v-model="form.supplier_id"
+                v-model="form.customer_id"
                 :options="selectOptions.people"
                 option-value="id"
-                option-label="nome_fantasia"
+                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -34,18 +34,6 @@
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
             />    
-            <q-select
-                label="Centro de Custos"
-                class="col-md-4 col-xs-12"
-                outlined
-                v-model="form.costs_center"
-                :options="selectOptions.costs_center"
-                option-value="id"
-                option-label="name"
-                emit-value
-                map-options
-                :rules="[val => !!val || 'Campo Obrigatório!']"
-            />
             <q-input
                 outlined
                 v-model="form.description"
@@ -324,7 +312,7 @@ import transactionsService from 'src/services/transactionsService'
 import transactionCategoriesService from 'src/services/transactionCategoriesService'
 import paymentMethodsService from 'src/services/paymentMethodsService'
 import accountsService from 'src/services/accountsService'
-import suppliersService from 'src/services/suppliersService'
+import customersService from 'src/services/customersService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import dateHelper from '../utils/dateHelper';
@@ -335,7 +323,7 @@ import { getPreviousRoute } from 'src/router'
 const viewDescricao = 'Despesa'
 
 export default defineComponent({
-    name: 'TransactionsFormExpense',
+    name: 'TransactionsFormIncome',
     components: { ViewHeader },
     setup () {
         const router = useRouter()
@@ -344,17 +332,16 @@ export default defineComponent({
         const { list: listCategories } = transactionCategoriesService()
         const { list: listAccounts } = accountsService()
         const { list: listPaymentMethods } = paymentMethodsService()
-        const { list: listSuppliers } = suppliersService()
+        const { list: listCustomers } = customersService()
         const { notifySuccess, notifyError } = notifications()
         const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const { formatBRL, formatUSD, maskCurrency, usdToCents } = currency()
 
         const form = ref({
 			installmentsUpdate: { payment_number: false, start_date: false, total_amount: false },
-            type: 'expense',
-            supplier_id: null,
+            type: 'income',
+            customer_id: null,
             category_id: null,
-			costs_center: null,
             description: '',
             payment_type: 'single',
             payment_number: 1,
@@ -389,10 +376,7 @@ export default defineComponent({
 			payment_methods: [],
             payment_type: [ {id: 'single', name: 'Único'}, {id: 'installment', name: 'Parcelado'}, {id: 'recurrent', name: 'Recorrente'}
             ],
-            costs_center: [ {id: 1, name: 'Marcenaria'}, {id: 2, name: 'Loja'}, {id: 3, name: 'Marketing'}],
         });
-
-    
 
         onMounted(async () => {
             await fetchCategoriesAndAccounts()
@@ -406,15 +390,18 @@ export default defineComponent({
 
         const fetchCategoriesAndAccounts = async () => {
             try {
-                const categoriesResponse = await listCategories('', { type: 'expense' })
+                const categoriesResponse = await listCategories('', { type: 'income' })
                 const accountsResponse = await listAccounts()
                 const paymentMethodsResponse = await listPaymentMethods()
-				const suppliersResponse = await listSuppliers()			
+				const customerResponse = await listCustomers()			
+
+				console.log(customerResponse.data.data);
+				
 
                 selectOptions.value.categories = categoriesResponse.data.data
                 selectOptions.value.accounts = accountsResponse.data.data
                 selectOptions.value.payment_methods = paymentMethodsResponse.data.data
-                selectOptions.value.people = suppliersResponse.data.data
+                selectOptions.value.people = customerResponse.data.data
             } catch (error) {
                 notifyError('Erro ao carregar categorias ou contas.')
             }
@@ -477,9 +464,8 @@ export default defineComponent({
 
             return {
                 type: form.value.type,
-                supplier_id: form.value.supplier_id,
+                customer_id: form.value.customer_id,
                 category_id: form.value.category_id,
-                costs_center: form.value.costs_center,
                 description: form.value.description,
                 payment_type: form.value.payment_type,
                 total_amount: form.value.total_amount,
