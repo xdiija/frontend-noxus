@@ -616,7 +616,7 @@ export default defineComponent({
                 items: [
                     { label: 'Receita', value: 'Income', color: 'positive' },
                     { label: 'Despesa', value: 'Expense', color: 'negative' },
-                    { label: 'Transferência', value: 'Transferency', color: 'secondary' },
+                    { label: 'Transferência', value: 'Transfer', color: 'secondary' },
                 ]
                 },
                 cancel: {

@@ -1,7 +1,7 @@
 <template>
   <q-page class="flex flex-center">
     <q-card style="width: 300px; height: auto; display: flex; flex-direction: column; align-items: center;">
-      <img src="../assets/noxusLogoGreen.png">
+      <img src="../assets/noxusLogoGreen.png" class="q-mt-lg q-mb-lg" />
       <form @keydown.enter.prevent="onSubmit">
         <q-card-section class="q-pt-none full-width">
             <q-input
@@ -38,7 +38,12 @@
         />
       </q-card-actions>
       <q-card-actions class="full-width">
-        <q-btn flat no-caps class="q-mx-sm" color="primary" label="Esqueci minha senha" @click="$router.push({ name: 'esqueciSenha' })" style="width: 100%"/>
+        <q-btn
+            outline no-caps class="q-mx-sm"
+            color="primary" label="Esqueci minha senha"
+            @click="$router.push({ name: 'esqueciSenha' })"
+            style="width: 100%"
+        />
       </q-card-actions>
     </q-card>
 

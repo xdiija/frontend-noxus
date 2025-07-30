@@ -374,8 +374,9 @@ export default defineComponent({
 			],
         })
 
+		const isEditMode = computed(() => !!route.params.id)
 		const headerProps = ref({
-			title: '',
+			title: isEditMode.value ? `Editar ${viewDescricao}` : `Cadastrar ${viewDescricao}`,
 			btnIcon: 'format_list_numbered',
 			btnName: 'Listar',
 			btnTo: 'transactions'
@@ -391,8 +392,7 @@ export default defineComponent({
             costs_center: [ {id: 1, name: 'Marcenaria'}, {id: 2, name: 'Loja'}, {id: 3, name: 'Marketing'}],
         });
 
-        const isEditMode = computed(() => !!route.params.id)
-        headerProps.title = isEditMode.value ? `Editar ${viewDescricao}` : `Cadastrar ${viewDescricao}`
+    
 
         onMounted(async () => {
             await fetchCategoriesAndAccounts()
