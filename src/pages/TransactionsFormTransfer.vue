@@ -44,7 +44,7 @@
             />
 			<q-input
 				outlined
-                :model-value="form.date"
+                :model-value="form.transfer_date"
                 label="Data"
                 class="col-md-2 col-xs-12"
                 readonly
@@ -124,8 +124,8 @@ export default defineComponent({
             from_account_id: null,
             to_account_id: null,
             description: '',
-			date: getTodaysDate(),
-			amount: 'R$: 00,00'
+			transfer_date: getTodaysDate(),
+			amount: 'R$ 0,00'
         })
 
 		const isEditMode = computed(() => !!route.params.id)
@@ -159,15 +159,15 @@ export default defineComponent({
             }
         }
 
-        const onSubmit = async () => {
-			console.log(makePayload());
-			
-            //form.value.id ? updateTransaction() : newTransaction()
+        const onSubmit = async () => {		
+            console.log(makePayload());
+            
+            form.value.id ? updateTransaction() : newTransaction()
         }
 
 		const newTransaction = async () => {
             try {
-                await post(makePayload())
+                await post(makePayload(), '/transfer')
                 notifySuccess(`${viewDescricao} criada com sucesso!`)
                 router.push({ name: headerProps.value.btnTo })
             } catch (error) {
@@ -205,8 +205,8 @@ export default defineComponent({
                 to_account_id: form.value.to_account_id,
                 type: form.value.type,
                 description: form.value.description,
-                amount: form.value.amount,
-                date: form.value.date,
+                amount: formatUSD(form.value.amount),
+                transfer_date: convertToDbFormat(form.value.transfer_date),
             }
         }
 
@@ -216,18 +216,18 @@ export default defineComponent({
 
 		const onInputTotalAmount = (value) => {
             if (!value) {
-                form.value.total_amount = null;
+                form.value.amount = null;
                 return;
             }            
-            form.value.total_amount = formatBRL(value)
+            form.value.amount = formatBRL(value)
         };
 
         const formattedTotalAmount = computed({
             get() {
-                return form.value.total_amount || '';
+                return form.value.amount || '';
             },
             set(value) {
-                form.value.total_amount = value;
+                form.value.amount = value;
                 onInputTotalAmount(value);
             }
         });

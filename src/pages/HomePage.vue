@@ -6,10 +6,10 @@
         <!-- Chart 1 -->
         <div class="col-12 col-md-6">
           <q-card>
-            <q-card-section>
-              <div class="text-h6">Vendas da Semana</div>
+            <q-card-section style="height: 40vh;">
+              <div class="text-subtitle1">Vendas da Semana</div>
               <apexchart
-                height="250"
+                height="95%"
                 type="bar"
                 :options="chartOptions1"
                 :series="series1"
@@ -21,10 +21,10 @@
         <!-- Chart 2 -->
         <div class="col-12 col-md-6">
           <q-card>
-            <q-card-section>
-              <div class="text-h6">Lucro Mensal</div>
+            <q-card-section style="height: 40vh;">
+              <div class="text-subtitle1">Lucro Mensal</div>
               <apexchart
-                height="250"
+                height="95%"
                 type="line"
                 :options="chartOptions2"
                 :series="series2"
@@ -36,10 +36,10 @@
         <!-- Chart 3 -->
         <div class="col-12 col-md-6">
           <q-card>
-            <q-card-section>
-              <div class="text-h6">Clientes Ativos</div>
+            <q-card-section style="height: 40vh;">
+              <div class="text-subtitle1">Clientes Ativos</div>
               <apexchart
-                height="250"
+                height="95%"
                 type="area"
                 :options="chartOptions3"
                 :series="series3"
@@ -51,10 +51,10 @@
         <!-- Chart 4 -->
         <div class="col-12 col-md-6">
           <q-card>
-            <q-card-section>
-              <div class="text-h6">Distribuição de Categorias</div>
+            <q-card-section style="height: 40vh;">
+              <div class="text-subtitle1">Distribuição de Categorias</div>
               <apexchart
-                height="250"
+                height="95%"
                 type="pie"
                 :options="chartOptions4"
                 :series="series4"

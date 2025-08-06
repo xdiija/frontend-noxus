@@ -17,6 +17,7 @@
         >
             <q-tab name="expense" label="Saídas" @click="setTypeToFilter('expense')"/>
             <q-tab name="income" label="Entradas" @click="setTypeToFilter('income')"/>
+            <q-tab name="transfer" label="Transferências" @click="setTypeToFilter('transfer')"/>
             <q-tab name="all" label="Todas as Transações" @click="setTypeToFilter('all')" />
 
         </q-tabs>
@@ -159,14 +160,24 @@
         >
             
             <template v-slot:body-cell-total_amount="props">
-                <q-td :props="props" 
+                <q-td
+                    :props="props"
                     :class="[
-                        'text-weight-bold',
-                        props.row.category.type == 'income'
-                            ? 'text-positive' : 'text-negative'
+                    'text-weight-bold',
+                    props.row.category.type === 'income'
+                        ? 'text-positive'
+                        : props.row.category.type === 'expense'
+                        ? 'text-negative'
+                        : 'text-secondary'
                     ]"
                 >
-                    <q-icon :name="props.row.category.type === 'income' ? 'add' : 'remove'" />
+                    <q-icon
+                    :name="props.row.category.type === 'income'
+                        ? 'add'
+                        : props.row.category.type === 'expense'
+                        ? 'remove'
+                        : 'swap_horiz'"
+                    />
                     {{ props.value }}
                 </q-td>
             </template>
@@ -270,14 +281,14 @@ export default defineComponent({
             },
             {
                 label: 'Parcelas',
-                field: row => getPaymentsInfo(row.payments).totalAndPaid,
+                field: row => getPaymentsInfo(row.payments, row.category.type).totalAndPaid,
                 name: 'payments',
                 sortable: true,
                 align: 'left'
             },
             {
                 label: 'Valor Total',
-                field: row => getPaymentsInfo(row.payments).brTotalAmount,
+                field: row => getPaymentsInfo(row.payments, row.category.type).brTotalAmount,
                 name: 'total_amount',
                 sortable: true,
                 align: 'left'
@@ -377,10 +388,17 @@ export default defineComponent({
             return queryParams;
         }
 
-        const getPaymentsInfo = (payments) => {
+        const getPaymentsInfo = (payments, type) => {
+
             const paymentsInfo = {
                 totalCount: 0, paidCount: 0, totalAmount: 0, totalAndPaid: null, brTotalAmount: null
             };
+
+            if(type == 'transfer'){
+                paymentsInfo.totalAndPaid = '1';
+                paymentsInfo.brTotalAmount = formatBRL(payments[0].amount);
+                return paymentsInfo;
+            }
 
             payments.forEach(payment => {
                 paymentsInfo.totalCount++;
