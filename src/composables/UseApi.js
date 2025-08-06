@@ -15,7 +15,7 @@ export default function useApi(url) {
 
     const post = async (reqData, endPoint = "") => {
         await refreshToken(url);
-        return await api.post(url, reqData)
+        return await api.post(`${url}${endPoint}`, reqData)
     }
 
     const update = async (reqData, id, endPoint = "") => {
