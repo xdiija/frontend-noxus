@@ -52,9 +52,17 @@ export default defineComponent({
     setup () {
         const router = useRouter()
         const leftDrawerOpen = ref(false)
-        const { getUser, getMenus, clearAuth } = authService()
-        const handleLinkClick = (route) => {
-			if (route === '/login') clearAuth();
+        const { post, getUser, getMenus, clearAuth } = authService('logout')
+        const handleLinkClick = async (route) => {
+			if (route === '/logout' || route === '/login') {
+				try {
+					await post()
+				} catch (e) {
+					console.error('Failed to call backend logout', e)
+				}
+				clearAuth()
+				router.push({ name: 'login' })
+			}
         }
 
     	const prepareMenus = () => {
@@ -75,8 +83,8 @@ export default defineComponent({
 				links.push(link)
 			});
 
-			links.push(newLink({name: "Logout", icon: "exit_to_app", route: "/login"}, 0))
-			
+			links.push(newLink({ name: "Logout", icon: "exit_to_app", route: "/logout" }, 0))
+
 			return links
         }
 

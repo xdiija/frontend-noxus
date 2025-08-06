@@ -67,12 +67,11 @@ export default {
     },
     methods: {
         async onSubmit () {
-            const { post, setToken, setUser, setMenus } = authService('login')
+            const { post, setUser, setMenus } = authService('login')
             const { notifyError } = notifications()
             const userCredentials = { email: this.login.email, password: this.login.password }
             try {
                 const { data } = await post(userCredentials)       
-                setToken(data.access_token, data.expires_in)
                 setUser(data.user)
                 setMenus(data.menus)
                 this.$router.push({ name: 'home' })
