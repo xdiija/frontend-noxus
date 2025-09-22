@@ -1,5 +1,4 @@
 import { api } from 'boot/axios'
-import authService from 'src/services/authService'
 
 export default function useApi(url) {
     const list = async (endPoint = "", queryParams = {}) => {
@@ -15,8 +14,8 @@ export default function useApi(url) {
         return await api.post(`${url}${endPoint}`, reqData)
     }
 
-    const update = async (reqData, IdAndEndPoint = "") => {
-        return await api.put(`${url}/${IdAndEndPoint}`, reqData)
+    const update = async (reqData, id, endPoint = "") => {
+        return await api.put(`${url}${endPoint}/${id}`, reqData)
     }
 
     const changeStatus = async (id, reqData, endPoint = "") => {
@@ -34,6 +33,7 @@ export default function useApi(url) {
 
         for (const key in objParams) {
             if (Array.isArray(objParams[key])) {
+                // Handle array values (account: [1, 2] → account[]=1&account[]=2)
                 objParams[key].forEach(value => {
                     params.append(`${key}[]`, value);
                 });
@@ -45,14 +45,6 @@ export default function useApi(url) {
         const queryString = params.toString();
         return queryString ? `?${queryString}` : '';
     };
-
-    const refreshToken = async (url) => {
-        const arrIgnore = ['auth'];
-        if (!arrIgnore.some(word => url.includes(word))) {
-            const auth = authService();
-            await auth.refreshToken();
-        }
-    }
 
     return {
         list,

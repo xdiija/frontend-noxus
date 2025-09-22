@@ -67,6 +67,16 @@ const routes = [
                 component: () => import('src/pages/CustomersForm.vue')
             },
             {
+                path: 'suppliers',
+                name: 'suppliers',
+                component: () => import('src/pages/SuppliersPage.vue')
+            },
+            {
+                path: 'suppliers-form/:id?',
+                name: 'suppliersForm',
+                component: () => import('src/pages/SuppliersForm.vue')
+            },
+            {
                 path: 'payment-methods',
                 name: 'paymentMethods',
                 component: () => import('src/pages/PaymentMethodsPage.vue')
