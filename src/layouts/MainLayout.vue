@@ -9,12 +9,24 @@
 					icon="menu"
 					aria-label="Menu"
 					@click="toggleLeftDrawer"
-				/>
+				>
+					<q-tooltip class="bg-primary">Menus</q-tooltip>
+                </q-btn>
         		<q-space />
 				<q-toolbar-title>
 					Noxus Sistemas
 				</q-toolbar-title>
         		<q-space />
+				<q-btn
+					flat
+					dense
+					round
+					icon="account_circle"
+					@click="myAccount"
+				>
+					<q-tooltip class="bg-primary">Minha Conta</q-tooltip>
+                </q-btn>
+
       		</q-toolbar>
     	</q-header>
     	<q-drawer v-model="leftDrawerOpen" bordered >
@@ -107,6 +119,9 @@ export default defineComponent({
             toggleLeftDrawer () {
                 leftDrawerOpen.value = !leftDrawerOpen.value
             },
+			myAccount () {
+				router.push({ name: 'my-account' })
+			},
             handleLinkClick,
 			newLink
         }

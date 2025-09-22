@@ -4,7 +4,7 @@
             <span class="text-h5">
                 {{ title }}
             </span>
-            <q-btn
+            <q-btn v-if="btnName"
                 color="primary"
                 :icon="btnIcon"
                 :label="btnName"

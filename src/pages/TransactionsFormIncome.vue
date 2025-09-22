@@ -320,7 +320,7 @@ import notifications from '../utils/notifications'
 import currency from '../utils/currency';
 import { getPreviousRoute } from 'src/router'
 
-const viewDescricao = 'Despesa'
+const viewDescricao = 'Receita'
 
 export default defineComponent({
     name: 'TransactionsFormIncome',
@@ -426,7 +426,10 @@ export default defineComponent({
         const getTransaction = async (id) => {
             try {
                 const { data } = await getByID(id)
+				console.log(data.data);
+				
                 form.value = data.data
+				form.value.category_id = data.data.category.id
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: headerProps.value.btnTo })

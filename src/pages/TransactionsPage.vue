@@ -185,21 +185,21 @@
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         icon="edit"
-                        color="warning"
+                        color="primary"
                         dense size="sm"
-                        @click="handleEdit(props.row.id)"
+                        @click="handleEdit(props.row.id, props.row.category.type)"
                     >
-                        <q-tooltip class="bg-warning">
+                        <q-tooltip class="bg-primary">
                             Editar
                         </q-tooltip>
                     </q-btn>
                     <q-btn
                         icon="delete"
-                        color="negative"
+                        color="primary"
                         dense size="sm"
                         @click="handleDestroy(props.row.id)"
                     >
-                        <q-tooltip class="bg-negative">Excluir</q-tooltip>
+                        <q-tooltip class="bg-primary">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
 
@@ -564,6 +564,56 @@ export default defineComponent({
             })
         }
 
+        const handleEdit = (id, type) => {       
+            switch (type) {
+                case 'income':
+                    router.push({ name: 'transactionsFormIncome', params: { id } })
+                    break;
+                case 'expense':
+                    router.push({ name: 'transactionsFormExpense', params: { id } })
+                    break;
+                case 'transfer':
+                    router.push({ name: 'transactionsFormTransfer', params: { id } })
+                    break;
+                default:
+                    console.error('handleEdit: Wrong Type');
+                    break;
+            }
+        }
+
+        const handleDestroy = async (id) => {
+            try {
+                $q.dialog({
+                    title: 'Confirmação',
+                    message: 'Deseja realmente excluir o registro?',
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true 
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary',
+                    },
+                    persistent: true
+                }).onOk(async () => {
+                    await destroy(id)
+                    $q.notify({
+                        message: `Registro ${id} removido!`,
+                        icon: 'check',
+                        color: 'positive'
+                    })
+                    await getTransactions()
+                })
+            } catch (error) {
+                $q.notify({
+                    message: 'Erro ao excluir registro!',
+                    icon: 'times',
+                    color: 'negative'
+                })
+            }
+        }
+
         return {
             headerProps,
             rows,
@@ -572,6 +622,8 @@ export default defineComponent({
             selectOptions,
             pagination,
             loading,
+            handleEdit,
+            handleDestroy,
             onRequest,
             handleCategoryFilterChange,
             handleMultiSelection,

@@ -30,13 +30,7 @@ export default route(function (/* { store, ssrContext } */) {
                 next({ name: 'login' })
 
             } else {
-                const tokenValid = await auth.verifyToken()
-
-                if (!tokenValid) {
-                    next({ name: 'login' })
-                } else {
-                    next()
-                }
+                next()
             }
         } else {
             next()

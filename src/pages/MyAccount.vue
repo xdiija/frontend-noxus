@@ -15,6 +15,7 @@
                 v-model="form.name"
                 label="Nome"
                 lazy-rules
+                readonly
                 class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
@@ -22,6 +23,7 @@
                 outlined
                 v-model="form.email"
                 label="Email"
+                readonly
                 lazy-rules
                 class="col-md-6 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
@@ -30,6 +32,7 @@
                 label="Perfil"
                 class="col-md-6 col-xs-12"
                 outlined
+                readonly
                 v-model="form.roles"
                 :options="roles"
                 option-label="name"
@@ -43,6 +46,7 @@
                 label="Status"
                 class="col-md-6 col-xs-12"
                 outlined
+                readonly
                 v-model="form.status"
                 :options="activeInactive"
                 option-label="name"
@@ -52,10 +56,28 @@
             />
             <q-input
                 outlined
+                label="Senha Antiga"
+                v-model="form.old_password"
+                lazy-rules
+                :rules="[val => !!val || 'Campo Obrigatório!']"
+                class="col-md-4 col-xs-12"
+                :type="form.isPwd ? 'password' : 'text'"
+                autocomplete="senha-antiga"
+            >
+                <template v-slot:append>
+                    <q-icon
+                        :name="form.isPwd ? 'visibility_off' : 'visibility'"
+                        class="cursor-pointer"
+                        @click="form.isPwd = !form.isPwd"
+                    />
+                </template>
+            </q-input>
+            <q-input
+                outlined
                 label="Senha"
                 v-model="form.password"
                 lazy-rules
-                class="col-md-6 col-xs-12"
+                class="col-md-4 col-xs-12"
                 :type="form.isPwd ? 'password' : 'text'"
                 autocomplete="nova-senha"
                 :rules="passwordRules"
@@ -73,7 +95,7 @@
                 label="Confirmação de Senha"
                 v-model="form.password_confirm"
                 lazy-rules
-                class="col-md-6 col-xs-12"
+                class="col-md-4 col-xs-12"
                 :type="form.isPwd ? 'password' : 'text'"
                 autocomplete="nova-senha"
                 :rules="passwordConfirmRules"
@@ -99,7 +121,7 @@
                     color="primary"
                     class="float-right q-mr-sm"
                     icon="arrow_back"
-                    :to="{ name: 'users' }"
+                    :to="{ name: 'home' }"
                     outline
                 />
             </div>
@@ -117,9 +139,8 @@ import notifications from '../utils/notifications'
 import { activeInactive } from 'src/constants/statusOptions';
 
 const headerProps = {
-    title: '',
+    title: 'Minha Conta',
     btnIcon: 'format_list_numbered',
-    btnName: 'Listar',
     btnTo: 'users'
 }
 
@@ -129,10 +150,12 @@ export default defineComponent({
     props: {
         user: { type: Object, required: true}
     },
-    setup () {
+
+    
+    setup (props) {
         const router = useRouter()
         const route = useRoute()
-        const { post, getByID, update } = usersService()
+        const { getByID, update } = usersService()
         const { notifySuccess, notifyError } = notifications()
 
         const roles = ref([])
@@ -142,21 +165,21 @@ export default defineComponent({
             status: null,
             roles: [],
             email: null,
+            old_password: null,
             password: null,
             password_confirm: null
         })
 
-        const isEditMode = computed(() => !!route.params.id)
-        headerProps.title = isEditMode.value ? 'Editar Usuário' : 'Cadastrar Usuário'
+        const isEditMode = true;
 
         const passwordRules = computed(() => [
-            val => isEditMode.value || (val && val.length > 0) || 'Campo Obrigatório!',
-            val => (isEditMode.value && !val) || val.length >= 6 || 'A senha deve ter pelo menos 6 caracteres'
+            val => isEditMode || (val && val.length > 0) || 'Campo Obrigatório!',
+            val => (isEditMode && !val) || val.length >= 6 || 'A senha deve ter pelo menos 6 caracteres'
         ])
 
         const passwordConfirmRules = computed(() => [
             val => {
-                if (!isEditMode.value || form.value.password) {
+                if (!isEditMode || form.value.password) {
                     return (val && val === form.value.password) || 'As senhas não coincidem'
                 }
                 return true
@@ -164,10 +187,9 @@ export default defineComponent({
         ])
 
         onMounted(async () => {
-            if (route.params.id) {
-                await getUser(route.params.id)
-            }
             await getRoles()
+            await getUser(props.user.id)
+
         })
 
         const getRoles = async () => {
@@ -194,7 +216,8 @@ export default defineComponent({
 
         const updateUser = async () => {
             try {
-                await update(makePayload(), form.value.id)
+                const idAndEndPoint = `${form.value.id}/change-password`;
+                await update(makePayload(), idAndEndPoint)
                 notifySuccess('Usuário atualizado com sucesso!')
                 router.push({ name: 'users' })
             } catch (error) {
@@ -205,38 +228,21 @@ export default defineComponent({
             }
         }
 
-        const newUser = async () => {
-            
-            try {
-                await post(makePayload())
-                notifySuccess('Usuário criado com sucesso!')
-                router.push({ name: 'users' })
-            } catch (error) {                
-                Object.keys(error.response.data.errors).forEach(key => {
-                    notifyError(error.response.data.errors[key])
-                })
-            }
-        }
-
         const makePayload = () => {                      
             const payload = {
-                name: form.value.name,
-                roles: form.value.roles,
-                email: form.value.email,
-                status: form.value.status.id
+                old_password: form.value.old_password,
+                new_password: form.value.password
             }            
-            if (form.value.password) { payload.password = form.value.password }
             return payload
         }
 
         const onSubmit = async () => {
-            form.value.id ? updateUser() : newUser()
+            updateUser()
         }
 
         return {
             form,
             onSubmit,
-     
             headerProps,
             passwordRules,
             passwordConfirmRules,
