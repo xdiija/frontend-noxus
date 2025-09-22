@@ -12,7 +12,7 @@
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
-                        :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
+                        color="positive"
                         dense size="sm"
                         @click="handleChangeStatus(props.row.id)">
                         <q-tooltip class="bg-accent">
@@ -21,19 +21,19 @@
                     </q-btn>
                     <q-btn
                         icon="edit"
-                        color="warning"
+                        color="primary"
                         dense size="sm"
                         @click="handleEditMethod(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Editar</q-tooltip>
+                        <q-tooltip class="bg-primary">Editar</q-tooltip>
                     </q-btn>
                     <q-btn
                         icon="delete"
-                        color="negative"
+                        color="primary"
                         dense size="sm"
                         @click="handleDestroy(props.row.id)"
                     >
-                        <q-tooltip class="bg-accent">Excluir</q-tooltip>
+                        <q-tooltip class="bg-primary">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
             </template>

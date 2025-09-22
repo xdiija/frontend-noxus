@@ -21,21 +21,21 @@
                     </q-btn>
                     <q-btn
                         icon="edit"
-                        color="warning"
+                        color="primary"
                         dense size="sm"
                         @click="handleEditAccount(props.row.id)"
                     >
-                        <q-tooltip class="bg-warning">
+                        <q-tooltip class="bg-primary">
                             Editar
                         </q-tooltip>
                     </q-btn>
                     <q-btn
                         icon="delete"
-                        color="negative"
+                        color="primary"
                         dense size="sm"
                         @click="handleDestroy(props.row.id)"
                     >
-                        <q-tooltip class="bg-negative">Excluir</q-tooltip>
+                        <q-tooltip class="bg-primary">Excluir</q-tooltip>
                     </q-btn>
                 </q-td>
 
