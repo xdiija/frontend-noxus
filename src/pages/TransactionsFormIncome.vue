@@ -57,9 +57,9 @@
             />
             <q-input
 				v-if="form.payment_type == 'installment'"
-				:outlined="form.installmentsUpdate.payment_number"
-  				:filled="!form.installmentsUpdate.payment_number"
-				v-model="form.payment_number"
+				:outlined="form.installmentsUpdate.payment_count"
+  				:filled="!form.installmentsUpdate.payment_count"
+				v-model="form.payment_count"
 				type="number"
 				label="Parcelas"
 				lazy-rules
@@ -74,8 +74,23 @@
 				]"
 				@update:model-value="paymentFunctions.handlePaymentNumberChange"
 			/>
+			<q-select
+				v-if="form.payment_type == 'recurrent'"
+                label="Intervalo"
+                class="col-md-2 col-xs-12"
+                :outlined="form.installmentsUpdate.interval"
+  				:filled="!form.installmentsUpdate.interval"
+                v-model="form.interval"
+                :options="selectOptions.interval"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                :rules="[val => !!val || 'Campo Obrigatório!']"
+				@update:model-value="paymentFunctions.handleIntervalChange"
+            />
 			<q-input
-				v-if="form.payment_type == 'installment'"
+				v-if="form.payment_type == 'installment' || form.payment_type == 'recurrent'"
 				:outlined="form.installmentsUpdate.start_date"
   				:filled="!form.installmentsUpdate.start_date"
                 :model-value="form.start_date"
@@ -100,7 +115,7 @@
                 </template>
             </q-input>
             <q-input
-				v-if="form.payment_type == 'installment'"
+				v-if="form.payment_type == 'installment'|| form.payment_type == 'recurrent'"
                 :outlined="form.installmentsUpdate.total_amount"
   				:filled="!form.installmentsUpdate.total_amount"
                 v-model="formattedTotalAmount"
@@ -127,8 +142,8 @@
 				>
 				<template v-slot:top-right>
 					<q-btn
-						v-if="form.payment_type == 'installment'"
-						:disabled="form.start_date == null || form.total_amount == 0 || form.payment_number < 2 || form.payment_number > 24"
+						v-if="form.payment_type == 'installment' || form.payment_type == 'recurrent'"
+						:disabled="form.start_date == null || formatUSD(form.total_amount) == 0 || ( form.payment_count < 2 && form.payment_type != 'recurrent') || form.payment_count > 24"
 						size="sm"
 						color="primary"
 						label="Gerar Parcelas"
@@ -266,7 +281,7 @@
 									@update:model-value="val => paymentFunctions.handlePaymentAmountInput(val, props.row)"
 								/>
 								<q-checkbox
-									v-if="form.payments.length > 1"
+									v-if="form.payments.length > 1 && form.payment_type != 'recurrent'"
 									v-model="props.row.lock"
 									checked-icon="lock"
 									unchecked-icon="lock_open"
@@ -338,13 +353,14 @@ export default defineComponent({
         const { formatBRL, formatUSD, maskCurrency, usdToCents } = currency()
 
         const form = ref({
-			installmentsUpdate: { payment_number: false, start_date: false, total_amount: false },
+			installmentsUpdate: { payment_count: false, start_date: false, total_amount: false },
             type: 'income',
             customer_id: null,
             category_id: null,
             description: '',
             payment_type: 'single',
-            payment_number: 1,
+            payment_count: 1,
+			interval: null,
 			start_date: null,
 			total_amount: 0,
             payments: [
@@ -374,6 +390,9 @@ export default defineComponent({
             categories: [],
             people: [],
 			payment_methods: [],
+			interval: [
+				{id: 'weekly', name: 'Semanal'}, {id: 'monthly', name: 'Mensal'}
+			],
             payment_type: [ {id: 'single', name: 'Único'}, {id: 'installment', name: 'Parcelado'}, {id: 'recurrent', name: 'Recorrente'}
             ],
         });
@@ -450,11 +469,13 @@ export default defineComponent({
 
         const makePayload = () => {
 			const payments = [];
+			let paymentNumber = 1;
 			form.value.payments.forEach(formPayment => {
 				payments.push(
 					{
 						discount: 0,
 						increase: 0,
+						payment_number: paymentNumber,
 						created_at: convertToDbFormat(formPayment.created_at),
 						due_date: convertToDbFormat(formPayment.due_date),
 						payment_date: convertToDbFormat(formPayment.payment_date),
@@ -463,6 +484,8 @@ export default defineComponent({
 						amount: formatUSD(formPayment.amount),
 					}
 				)
+
+				paymentNumber++;
 			});
 
             return {
@@ -471,8 +494,11 @@ export default defineComponent({
                 category_id: form.value.category_id,
                 description: form.value.description,
                 payment_type: form.value.payment_type,
-                total_amount: form.value.total_amount,
+                total_amount: formatUSD(form.value.total_amount),
                 payments: payments,
+				interval: form.value.interval,
+				next_date: form.value.next_date,
+				start_date: convertToDbFormat(form.value.start_date)
             }
         }
 
@@ -514,13 +540,34 @@ export default defineComponent({
 
 			handlePaymentTypeChange: (type) => {
 				if(type == 'installment'){
-					form.value.payment_number = 2;
+					form.value.payment_count = 2;
 					form.value.total_amount = form.value.payments[0].amount;
 					form.value.start_date = form.value.payments[0].due_date;
 					return;
 				}
+
+				if(type == 'recurrent'){
+					form.value.payment_count = null
+					form.value.total_amount = form.value.payments[0].amount;
+					form.value.start_date = form.value.payments[0].due_date;
+					form.value.interval = 'monthly';
+
+					form.value.payments = [
+						{
+							index: 1,
+							created_at: form.value.payments[0].created_at,
+							due_date: form.value.payments[0].due_date,
+							payment_date: form.value.payments[0].payment_date,
+							account_id: form.value.payments[0].account_id,
+							amount: form.value.total_amount,
+							lock: false,
+						}
+					];
+
+					return;
+				}
 				
-				form.value.payment_number = 1
+				form.value.payment_count = 1
 				form.value.start_date = null;
 				form.value.payments = [
 					{
@@ -537,7 +584,7 @@ export default defineComponent({
 
 			handlePaymentNumberChange: (val) => {
 				if(val <= 1) return;
-				form.value.installmentsUpdate.payment_number = val == form.value.payments.length;
+				form.value.installmentsUpdate.payment_count = val == form.value.payments.length;
 			},
 
 			handlePaymentsStartDateChange: (val) => {					
@@ -557,35 +604,83 @@ export default defineComponent({
 			},
 
 			createPayments: () => {
-				if(!form.value.total_amount || !form.value.start_date) return;
+				if(formatUSD(form.value.total_amount) == 0 || !form.value.start_date) return;
 
 				const newPayments = [];
-				
 				const totalCents = usdToCents(formatUSD(form.value.total_amount));
-				const paymentCount = form.value.payment_number;
-				const baseValue = Math.floor(totalCents / paymentCount);
-				const remainder = totalCents % paymentCount;			
-				let dueDate = form.value.start_date;
 
-				for (let index = 0; index < paymentCount; index++) {
-					let amountCents = baseValue + (index < remainder ? 1 : 0);
-					dueDate = paymentFunctions.generateDueDate(form.value.start_date, index, 'months');
+				if(form.value.payment_type == 'installment'){
 
-					newPayments.push({
-						index: index + 1,
-						created_at: getTodaysDate(),
-						due_date: dueDate,
-						payment_date: null,
-						account_id: null,
-						amount: formatBRL(amountCents),
-						lock: false,
-					})
+					const paymentCount = form.value.payment_count;
+					const baseValue = Math.floor(totalCents / paymentCount);
+					const remainder = totalCents % paymentCount;			
+					let dueDate = form.value.start_date;
+	
+					for (let index = 0; index < paymentCount; index++) {
+						let amountCents = baseValue + (index < remainder ? 1 : 0);
+						dueDate = paymentFunctions.generateDueDate(form.value.start_date, index, 'months');
+	
+						newPayments.push({
+							index: index + 1,
+							created_at: getTodaysDate(),
+							due_date: dueDate,
+							payment_date: null,
+							account_id: null,
+							amount: formatBRL(amountCents),
+							lock: false,
+						})
+					}
+	
+					Object.entries(form.value.installmentsUpdate).forEach(([key, value]) => {
+						form.value.installmentsUpdate[key] = true;
+					});
+	
 				}
 
-				Object.entries(form.value.installmentsUpdate).forEach(([key, value]) => {
-					form.value.installmentsUpdate[key] = true;
-				});
 
+				if (form.value.payment_type == 'recurrent') {
+					const today = new Date();
+					const dates = [];
+					let date = form.value.start_date;
+
+					while (true) {
+						const [day, month, year] = date.split('/').map(Number);
+						const loopDate = new Date(year, month - 1, day);
+						
+						dates.push(date);
+
+						date = form.value.interval == 'monthly'
+							? paymentFunctions.addMonths(date, 1)
+							: paymentFunctions.addDays(date, 7);
+												
+						if (date.includes('-')) {
+							const [y, m, d] = date.split('-').map(Number);
+							date = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
+						}
+
+						if (loopDate > today){
+							form.value.next_date = convertToDbFormat(date);
+							break;
+						};
+					}
+
+					for (let index = 0; index < dates.length; index++) {	
+						newPayments.push({
+							index: index + 1,
+							created_at: getTodaysDate(),
+							due_date: dates[index],
+							payment_date: null,
+							account_id: null,
+							amount: formatBRL(totalCents),
+							lock: false,
+						})
+					}
+
+					Object.entries(form.value.installmentsUpdate).forEach(([key, value]) => {
+						form.value.installmentsUpdate[key] = true;
+					});
+				}
+				
 				form.value.payments = newPayments
 			},
 

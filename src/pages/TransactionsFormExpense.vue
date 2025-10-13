@@ -373,8 +373,8 @@ export default defineComponent({
             description: '',
             payment_type: 'single',
 			interval: null,
-            payment_count: 1,
 			start_date: null,
+            payment_count: 1,
 			total_amount: 0,
             payments: [
 				{
@@ -482,11 +482,13 @@ export default defineComponent({
 
         const makePayload = () => {
 			const payments = [];
+			let paymentNumber = 1;
 			form.value.payments.forEach(formPayment => {
 				payments.push(
 					{
 						discount: 0,
 						increase: 0,
+						payment_number: paymentNumber,
 						created_at: convertToDbFormat(formPayment.created_at),
 						due_date: convertToDbFormat(formPayment.due_date),
 						payment_date: convertToDbFormat(formPayment.payment_date),
@@ -495,6 +497,8 @@ export default defineComponent({
 						amount: formatUSD(formPayment.amount),
 					}
 				)
+
+				paymentNumber++;
 			});
 
             return {
@@ -505,8 +509,10 @@ export default defineComponent({
                 description: form.value.description,
                 payment_type: form.value.payment_type,
 				interval: form.value.interval,
-                total_amount: form.value.total_amount,
+                total_amount: formatUSD(form.value.total_amount),
                 payments: payments,
+				next_date: form.value.next_date,
+				start_date: convertToDbFormat(form.value.start_date)
             }
         }
 
@@ -562,20 +568,19 @@ export default defineComponent({
 					form.value.interval = 'monthly';
 
 					form.value.payments = [
-					{
-						index: 1,
-						created_at: form.value.payments[0].created_at,
-						due_date: form.value.payments[0].due_date,
-						payment_date: form.value.payments[0].payment_date,
-						account_id: form.value.payments[0].account_id,
-						amount: form.value.total_amount,
-						lock: false,
-					}
-				];
+						{
+							index: 1,
+							created_at: form.value.payments[0].created_at,
+							due_date: form.value.payments[0].due_date,
+							payment_date: form.value.payments[0].payment_date,
+							account_id: form.value.payments[0].account_id,
+							amount: form.value.total_amount,
+							lock: false,
+						}
+					];
 
 					return;
 				}
-
 
 				form.value.payment_count = 1
 				form.value.start_date = null;
@@ -672,7 +677,10 @@ export default defineComponent({
 							date = `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
 						}
 
-						if (loopDate > today) break;
+						if (loopDate > today){
+							form.value.next_date = convertToDbFormat(date);
+							break;
+						};
 					}
 
 					for (let index = 0; index < dates.length; index++) {	
