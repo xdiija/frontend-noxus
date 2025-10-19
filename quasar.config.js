@@ -61,7 +61,7 @@ module.exports = configure(function (ctx) {
             env: {
                 API_URL: ctx.dev
                     ? 'http://localhost:8989/api/'
-                    : 'http://localhost:8989/api/'
+                    : process.env.API_URL
             }
             // vueRouterBase,
             // vueDevtools,
