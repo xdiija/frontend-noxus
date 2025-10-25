@@ -309,13 +309,6 @@
                     :to="{ name: headerProps.btnTo }"
                     outline
                 />
-				 <q-btn
-                    label="TESTEEE"
-                    color="primary"
-                    class="float-right q-mr-sm"
-                    outline
-					@click="paymentFunctions.testeee"
-                />
             </div>
         </q-form>
     </div>
@@ -471,35 +464,47 @@ export default defineComponent({
 			const payments = [];
 			let paymentNumber = 1;
 			form.value.payments.forEach(formPayment => {
-				payments.push(
-					{
-						discount: 0,
-						increase: 0,
-						payment_number: paymentNumber,
-						created_at: convertToDbFormat(formPayment.created_at),
-						due_date: convertToDbFormat(formPayment.due_date),
-						payment_date: convertToDbFormat(formPayment.payment_date),
-						account_id: formPayment.account_id,
-						payment_method_id: formPayment.payment_method_id,
-						amount: formatUSD(formPayment.amount),
-					}
-				)
+		
+				const payment = {
+					discount: 0,
+					increase: 0,
+					payment_number: paymentNumber,
+					created_at: convertToDbFormat(formPayment.created_at),
+					due_date: convertToDbFormat(formPayment.due_date),
+					payment_date: convertToDbFormat(formPayment.payment_date),
+					amount: formatUSD(formPayment.amount),
+				};
+
+				if(formPayment.account_id) {				
+					payment.account_id = formPayment.account_id;
+				} 
+				if(formPayment.payment_method_id) {
+					payment.payment_method_id = formPayment.payment_method_id;
+				} 
+
+				payments.push(payment)
 
 				paymentNumber++;
 			});
 
-            return {
+            const payload = {
                 type: form.value.type,
-                customer_id: form.value.customer_id,
+                supplier_id: form.value.supplier_id,
                 category_id: form.value.category_id,
+                costs_center: form.value.costs_center,
                 description: form.value.description,
                 payment_type: form.value.payment_type,
-                total_amount: formatUSD(form.value.total_amount),
                 payments: payments,
-				interval: form.value.interval,
-				next_date: form.value.next_date,
-				start_date: convertToDbFormat(form.value.start_date)
             }
+
+			if(form.value.payment_type == 'recurrent'){
+				payload.total_amount = formatUSD(form.value.total_amount);
+				payload.next_date = form.value.next_date;
+				payload.start_date = convertToDbFormat(form.value.start_date);
+				payload.interval = form.value.interval;
+			}
+
+            return payload;
         }
 
         const paymentColumns = [
@@ -533,10 +538,6 @@ export default defineComponent({
 		}
 
 		const paymentFunctions = {
-
-			testeee: () => {
-				console.log(makePayload().payments);
-			},
 
 			handlePaymentTypeChange: (type) => {
 				if(type == 'installment'){
