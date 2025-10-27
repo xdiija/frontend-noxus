@@ -38,7 +38,7 @@
                     </q-btn>
                     <q-btn
                         icon="edit"
-                        color="warning"
+                        color="primary"
                         dense size="sm"
                         @click="handleEditUser(props.row.id)"
                     >
@@ -46,7 +46,7 @@
                     </q-btn>
                     <q-btn
                         icon="delete"
-                        color="negative"
+                        color="primary"
                         dense size="sm"
                         @click="handleDestroy(props.row.id)"
                     >
