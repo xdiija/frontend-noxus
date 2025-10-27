@@ -453,6 +453,8 @@ export default defineComponent({
             try {
                 const { data } = await getByID(id)
                 form.value = data.data
+				form.value.category_id = data.data.category.id
+				form.value.supplier_id = data.data.supplier.id
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: headerProps.value.btnTo })
