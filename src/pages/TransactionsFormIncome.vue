@@ -405,10 +405,7 @@ export default defineComponent({
                 const categoriesResponse = await listCategories('', { type: 'income' })
                 const accountsResponse = await listAccounts()
                 const paymentMethodsResponse = await listPaymentMethods()
-				const customerResponse = await listCustomers()			
-
-				console.log(customerResponse.data.data);
-				
+				const customerResponse = await listCustomers()							
 
                 selectOptions.value.categories = categoriesResponse.data.data
                 selectOptions.value.accounts = accountsResponse.data.data
@@ -442,6 +439,7 @@ export default defineComponent({
 				
                 form.value = data.data
 				form.value.category_id = data.data.category.id
+				form.value.customer_id = data.data.customer.id
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: headerProps.value.btnTo })
@@ -496,6 +494,10 @@ export default defineComponent({
                 payment_type: form.value.payment_type,
                 payments: payments,
             }
+
+			if(form.value.type == 'income'){
+				payload.customer_id = form.value.customer_id;
+			}
 
 			if(form.value.payment_type == 'recurrent'){
 				payload.total_amount = formatUSD(form.value.total_amount);
