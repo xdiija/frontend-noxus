@@ -97,6 +97,16 @@ const routes = [
                 component: () => import('src/pages/TransactionCategoriesForm.vue')
             },
             {
+                path: 'cost-centers',
+                name: 'costCenters',
+                component: () => import('src/pages/CostCentersPage.vue')
+            },
+            {
+                path: 'cost-centers-form/:id?',
+                name: 'costCentersForm',
+                component: () => import('src/pages/CostCentersForm.vue')
+            },
+            {
                 path: 'transactions',
                 name: 'transactions',
                 component: () => import('src/pages/TransactionsPage.vue')

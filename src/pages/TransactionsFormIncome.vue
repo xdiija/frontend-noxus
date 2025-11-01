@@ -487,17 +487,13 @@ export default defineComponent({
 
             const payload = {
                 type: form.value.type,
-                supplier_id: form.value.supplier_id,
+				customer_id: form.value.customer_id,
                 category_id: form.value.category_id,
                 costs_center: form.value.costs_center,
                 description: form.value.description,
                 payment_type: form.value.payment_type,
                 payments: payments,
-            }
-
-			if(form.value.type == 'income'){
-				payload.customer_id = form.value.customer_id;
-			}
+            }			
 
 			if(form.value.payment_type == 'recurrent'){
 				payload.total_amount = formatUSD(form.value.total_amount);
