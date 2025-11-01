@@ -38,7 +38,7 @@
                 label="Centro de Custos"
                 class="col-md-4 col-xs-12"
                 outlined
-                v-model="form.costs_center"
+                v-model="form.cost_center_id"
                 :options="selectOptions.costs_center"
                 option-value="id"
                 option-label="name"
@@ -333,6 +333,7 @@ import transactionCategoriesService from 'src/services/transactionCategoriesServ
 import paymentMethodsService from 'src/services/paymentMethodsService'
 import accountsService from 'src/services/accountsService'
 import suppliersService from 'src/services/suppliersService'
+import costCentersService from 'src/services/costCentersService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import dateHelper from '../utils/dateHelper';
@@ -353,6 +354,7 @@ export default defineComponent({
         const { list: listAccounts } = accountsService()
         const { list: listPaymentMethods } = paymentMethodsService()
         const { list: listSuppliers } = suppliersService()
+        const { list: listCostCenters } = costCentersService()		
         const { notifySuccess, notifyError } = notifications()
         const { convertToDbFormat, convertToBrFormat } = dateHelper()
         const { formatBRL, formatUSD, maskCurrency, usdToCents } = currency()
@@ -362,7 +364,7 @@ export default defineComponent({
             type: 'expense',
             supplier_id: null,
             category_id: null,
-			costs_center: null,
+			cost_center_id: null,
             description: '',
             payment_type: 'single',
 			interval: null,
@@ -419,15 +421,18 @@ export default defineComponent({
 
         const fetchCategoriesAndAccounts = async () => {
             try {
-                const categoriesResponse = await listCategories('', { type: 'expense' })
-                const accountsResponse = await listAccounts()
-                const paymentMethodsResponse = await listPaymentMethods()
-				const suppliersResponse = await listSuppliers()			
+                const categoriesResponse = await listCategories('', { type: 'expense' });
+                const accountsResponse = await listAccounts();
+                const paymentMethodsResponse = await listPaymentMethods();
+				const suppliersResponse = await listSuppliers();
+				const costCentersResponse = await listCostCenters();
 
-                selectOptions.value.categories = categoriesResponse.data.data
-                selectOptions.value.accounts = accountsResponse.data.data
-                selectOptions.value.payment_methods = paymentMethodsResponse.data.data
-                selectOptions.value.people = suppliersResponse.data.data
+                selectOptions.value.categories = categoriesResponse.data.data;
+                selectOptions.value.accounts = accountsResponse.data.data;
+                selectOptions.value.payment_methods = paymentMethodsResponse.data.data;
+                selectOptions.value.costs_center = costCentersResponse.data.data;
+                selectOptions.value.people = suppliersResponse.data.data;
+
             } catch (error) {
                 notifyError('Erro ao carregar categorias ou contas.')
             }
@@ -452,9 +457,11 @@ export default defineComponent({
         const getTransaction = async (id) => {
             try {
                 const { data } = await getByID(id)
-                form.value = data.data
+                form.value = data.data				
 				form.value.category_id = data.data.category.id
 				form.value.supplier_id = data.data.supplier.id
+				form.value.cost_center_id = data.data.cost_center.id
+
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: headerProps.value.btnTo })
@@ -503,7 +510,7 @@ export default defineComponent({
                 type: form.value.type,
                 supplier_id: form.value.supplier_id,
                 category_id: form.value.category_id,
-                costs_center: form.value.costs_center,
+                cost_center_id: form.value.cost_center_id,
                 description: form.value.description,
                 payment_type: form.value.payment_type,
                 payments: payments,

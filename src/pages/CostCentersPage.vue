@@ -1,0 +1,175 @@
+<template>
+    <div class="q-pa-md">
+        <router-view />
+        <ViewHeader
+            :title="headerProps.title"
+            :btnTo="headerProps.btnTo"
+            :btnIcon="headerProps.btnIcon"
+            :btnName="headerProps.btnName"
+        />
+        <q-table :rows="rows" :columns="columns" row-key="name" :rows-per-page-options="[0]">
+            <template v-slot:body-cell-actions="props">
+                <q-td :props="props" class="q-gutter-sm">
+                    <q-btn
+                        :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
+                        color="positive"
+                        dense size="sm"
+                        @click="handleChangeStatus(props.row.id)">
+                        <q-tooltip class="bg-accent">
+                            {{ props.row.status.name === 'Ativo' ? 'Inativar' : 'Ativar' }}
+                        </q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="edit"
+                        color="primary"
+                        dense size="sm"
+                        @click="handleEdit(props.row.id)"
+                    >
+                        <q-tooltip class="bg-primary">Editar</q-tooltip>
+                    </q-btn>
+                    <q-btn
+                        icon="delete"
+                        color="primary"
+                        dense size="sm"
+                        @click="handleDestroy(props.row.id)"
+                    >
+                        <q-tooltip class="bg-primary">Excluir</q-tooltip>
+                    </q-btn>
+                </q-td>
+            </template>
+        </q-table>
+    </div>
+</template>
+
+<script>
+import { defineComponent, ref, onMounted } from 'vue'
+import costCentersService from 'src/services/costCentersService'
+import { useQuasar } from 'quasar'
+import { useRouter } from 'vue-router'
+import ViewHeader from 'components/ViewHeader.vue'
+import notifications from '../utils/notifications'
+
+const headerProps = {
+    title: 'Centros de Custo',
+    btnTo: 'costCentersForm',
+    btnIcon: 'add',
+    btnName: 'Adicionar'
+}
+
+export default defineComponent({
+    name: 'CostCentersPage',
+    components: { ViewHeader },
+    props: {
+        user: {
+            type: Object,
+            required: true
+        }
+    },
+    setup () {
+        const $q = useQuasar()
+        const { notifySuccess, notifyError } = notifications()
+        const router = useRouter()
+        const rows = ref([])
+        const { list, changeStatus, destroy } = costCentersService()
+
+        const columns = [
+            {
+                label: 'ID',
+                field: 'id',
+                name: 'id',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Nome',
+                field: 'name',
+                name: 'name',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Status',
+                field: row => row.status.name,
+                name: 'status',
+                sortable: true,
+                align: 'left'
+            },
+            {
+                label: 'Ações',
+                field: 'actions',
+                name: 'actions',
+                align: 'right'
+            }
+        ]
+
+        onMounted(() => {
+            getCostCenters()
+        })
+
+        const getCostCenters = async () => {
+            try {
+                const { data } = await list()                
+                rows.value = data.data
+            } catch (error) {
+                console.error('Erro na requisição:', error)
+            }
+        }
+
+        const handleChangeStatus = async (id) => {
+            try {
+                $q.dialog({
+                    title: 'Confirmação',
+                    message: 'Deseja realmente alterar o status?',
+                    cancel: {
+                        label: 'Cancelar',
+                        color: 'primary',
+                        outline: true
+                    },
+                    ok: {
+                        label: 'Confirmar',
+                        color: 'primary'
+                    },
+                    persistent: true
+                }).onOk(async () => {
+                    await changeStatus(id)
+                    notifySuccess('Status alterado com sucesso!')
+                    await getCostCenters()
+                })
+            } catch (error) {
+                notifyError('Erro ao alterar status do registro.')
+            }
+        }
+
+        const handleEdit = (id) => {
+            router.push({ name: 'costCentersForm', params: { id } })
+        }
+
+        const handleDestroy = async (id) => {
+            try {
+                $q.dialog({
+                    title: 'Confirmação',
+                    message: 'Deseja mesmo excluir este registro?',
+                    cancel: { label: 'Cancelar', color: 'primary', outline: true },
+                    ok: { label: 'Confirmar', color: 'primary' },
+                    persistent: true
+                }).onOk(async () => {
+                    await destroy(id)
+                    notifySuccess(`Registro ${id} removido com sucesso!`)
+                    await getCostCenters()
+                })
+            } catch (error) {
+                notifyError('Erro ao excluir registro!')
+            }
+        }
+
+        return {
+            headerProps,
+            rows,
+            columns,
+            handleChangeStatus,
+            handleEdit,
+            handleDestroy
+        }
+    }
+})
+</script>
