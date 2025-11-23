@@ -320,14 +320,14 @@ export default defineComponent({
             },
             {
                 label: 'Forma de Pagamento',
-                field: row => row.payment_method.name,
+                field: row => row.payment_method ? row.payment_method.name : 'Não informado',
                 name: 'category',
                 sortable: true,
                 align: 'left'
             },
             {
                 label: 'Conta',
-                field: row => row.account.name,
+                field: row => row.account ? row.account.name : 'Não informado',
                 name: 'account',
                 sortable: true,
                 align: 'left'
