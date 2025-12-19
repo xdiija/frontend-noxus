@@ -131,6 +131,16 @@ const routes = [
                 name: 'payments',
                 component: () => import('src/pages/PaymentsPage.vue')
             },
+            {
+                path: 'banks',
+                name: 'banks',
+                component: () => import('src/pages/BanksPage.vue')
+            },
+            {
+                path: 'banks-form/:id?',
+                name: 'banksForm',
+                component: () => import('src/pages/BanksForm.vue')
+            },
         ]
     },
     {
