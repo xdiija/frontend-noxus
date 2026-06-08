@@ -36,7 +36,39 @@
                 <h6>Permissões</h6>
                 <div v-for="menu in menus" :key="menu.id" class="q-mb-md">
                     <q-card class="q-pa-sm">
-                        <div class="row items-center">
+                        <!-- Container menu: header only. Permissions live on its children. -->
+                        <template v-if="menu.children && menu.children.length > 0">
+                            <span class="text-subtitle1">{{ menu.name }}</span>
+                            <div class="q-pl-md">
+                                <div v-for="child in menu.children" :key="child.id" class="q-mb-md">
+                                    <q-card class="q-pa-sm">
+                                        <div class="row items-center">
+                                            <span class="text-subtitle2">{{ child.name }}</span>
+                                            <div class="q-pl-md">
+                                                <q-checkbox
+                                                    :label="'Visualizar'"
+                                                    :model-value="isPermissionChecked(child.id, 'can_view')"
+                                                    @update:model-value="togglePermission(child.id, 'can_view', $event)"
+                                                />
+                                                <q-checkbox
+                                                    :label="'Criar'"
+                                                    :model-value="isPermissionChecked(child.id, 'can_create')"
+                                                    @update:model-value="togglePermission(child.id, 'can_create', $event)"
+                                                />
+                                                <q-checkbox
+                                                    :label="'Atualizar'"
+                                                    :model-value="isPermissionChecked(child.id, 'can_update')"
+                                                    @update:model-value="togglePermission(child.id, 'can_update', $event)"
+                                                />
+                                            </div>
+                                        </div>
+                                    </q-card>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Leaf top-level menu: it is itself a permission unit. -->
+                        <div v-else class="row items-center">
                             <span class="text-subtitle1">{{ menu.name }}</span>
                             <div class="q-pl-md">
                                 <q-checkbox
@@ -54,34 +86,6 @@
                                     :model-value="isPermissionChecked(menu.id, 'can_update')"
                                     @update:model-value="togglePermission(menu.id, 'can_update', $event)"
                                 />
-                            </div>
-                        </div>
-
-                        <!-- Render Child Menus -->
-                        <div v-if="menu.children && menu.children.length > 0" class="q-pl-md">
-                            <div v-for="child in menu.children" :key="child.id" class="q-mb-md">
-                                <q-card class="q-pa-sm">
-                                    <div class="row items-center">
-                                        <span class="text-subtitle2">{{ child.name }}</span>
-                                        <div class="q-pl-md">
-                                            <q-checkbox
-                                                :label="'Visualizar'"
-                                                :model-value="isPermissionChecked(child.id, 'can_view')"
-                                                @update:model-value="togglePermission(child.id, 'can_view', $event)"
-                                            />
-                                            <q-checkbox
-                                                :label="'Criar'"
-                                                :model-value="isPermissionChecked(child.id, 'can_create')"
-                                                @update:model-value="togglePermission(child.id, 'can_create', $event)"
-                                            />
-                                            <q-checkbox
-                                                :label="'Atualizar'"
-                                                :model-value="isPermissionChecked(child.id, 'can_update')"
-                                                @update:model-value="togglePermission(child.id, 'can_update', $event)"
-                                            />
-                                        </div>
-                                    </div>
-                                </q-card>
                             </div>
                         </div>
                     </q-card>
@@ -157,34 +161,13 @@ export default defineComponent({
             form.value.id ? updateRole() : newRole()
         }
 
-        const togglePermission = (menuId, permission, isChecked) => {    
-                    
+        // Only leaf menus are permission units now, so toggling is a flat add/remove —
+        // no parent/child cascade. Container visibility is derived server-side from children.
+        const togglePermission = (menuId, permission, isChecked) => {
             if (isChecked) {
                 addPermission(menuId, permission)
-                const menu = menus.value.find(m => m.id === menuId);
-                if (menu) {
-                    menu.children.forEach(child => {
-                        addPermission(child.id, permission)
-                    });
-                } else {
-                    const parent = findParentByChildId(menuId)
-                    addPermission(parent.id, permission)
-                }
-                
             } else {
                 removePermission(menuId, permission)
-                const menu = menus.value.find(m => m.id === menuId);
-                if (menu) {
-                    menu.children.forEach(child => {
-                        removePermission(child.id, permission)
-                    });
-                } else {
-                    const parent = findParentByChildId(menuId)
-                    if(! hasPermissionForChildMenus(parent.children, permission)){
-                        removePermission(parent.id, permission) 
-                    }
-                }
-
             }
         };
 
@@ -192,12 +175,6 @@ export default defineComponent({
             return form.value.permissions.some(
                     perm => perm.menu_id === menuId && perm.permission === permission
                 )
-        }
-
-        function hasPermissionForChildMenus(menus, permission) {
-            return menus.some(menu => 
-                form.value.permissions.some(p => p.menu_id === menu.id && p.permission === permission)
-            );
         }
 
         const isPermissionChecked = (menuId, permission) => {
@@ -228,17 +205,6 @@ export default defineComponent({
                     perm => perm.menu_id !== menuId || (perm.permission !== 'can_create' && perm.permission !== 'can_update')
                 );
             }
-        };
-
-        const findParentByChildId = (childId) => {
-            const data = menus.value;
-            for (let item of data) {
-                const child = item.children.find(child => child.id === childId);
-                if (child) {
-                    return item;
-                }
-            }
-            return null;
         };
 
         const permissionsToFrontend = (backendPermissions) => {
@@ -333,10 +299,8 @@ export default defineComponent({
             isPermissionChecked,
             togglePermission,
             isPermissionOnArray,
-            findParentByChildId,
             addPermission,
             removePermission,
-            hasPermissionForChildMenus,
             permissionsToFrontend,
             permissionsToBackend
         }
