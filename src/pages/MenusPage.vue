@@ -90,6 +90,13 @@ export default defineComponent({
                 align: 'left'
             },
             {
+                label: 'Chave',
+                field: 'key',
+                name: 'key',
+                sortable: true,
+                align: 'left'
+            },
+            {
                 label: 'Rota',
                 field: 'route',
                 field: row => (row.route && row.route != "") ? row.route : '-',

@@ -87,10 +87,16 @@ export default defineComponent({
 	
 				const link = newLink(menu , 0)
 
-				menu.children.forEach(childMenu => {
+				;(menu.children || []).forEach(childMenu => {
 					const childLink = newLink(childMenu , 1)
 					link.children.push(childLink)
 				})
+
+				// Skip container menus (no route) that ended up with no visible children,
+				// otherwise EssentialLink renders a dead clickable item pointing nowhere.
+				if (!link.route && link.children.length === 0) {
+					return
+				}
 
 				links.push(link)
 			});
