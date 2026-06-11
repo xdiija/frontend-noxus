@@ -37,7 +37,7 @@ export default function useApi(url) {
                 objParams[key].forEach(value => {
                     params.append(`${key}[]`, value);
                 });
-            } else if (objParams[key] !== undefined && objParams[key] !== null) {
+            } else if (objParams[key] !== undefined && objParams[key] !== null && objParams[key] !== '') {
                 params.append(key, objParams[key]);
             }
         }
