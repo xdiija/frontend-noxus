@@ -37,24 +37,52 @@
                     <q-card class="q-pa-sm">
                         <!-- Container menu: header only. Permissions live on its children. -->
                         <template v-if="menu.children && menu.children.length > 0">
-                            <span class="text-subtitle1">{{ menu.name }}</span>
+                            <div class="row items-center q-pl-lg">
+                                <span class="text-subtitle1 permission-label text-weight-bold">{{ menu.name }}</span>
+                                <div class="q-pl-md">
+                                    <q-checkbox
+                                        class="text-weight-bold"
+                                        :label="'Visualizar'"
+                                        :model-value="parentPermissionState(menu, 'can_view')"
+                                        :toggle-indeterminate="false"
+                                        @update:model-value="toggleParentPermission(menu, 'can_view', $event)"
+                                    />
+                                    <q-checkbox
+                                        class="text-weight-bold"
+                                        :label="'Criar'"
+                                        :model-value="parentPermissionState(menu, 'can_create')"
+                                        :toggle-indeterminate="false"
+                                        @update:model-value="toggleParentPermission(menu, 'can_create', $event)"
+                                    />
+                                    <q-checkbox
+                                        class="text-weight-bold"
+                                        :label="'Atualizar'"
+                                        :model-value="parentPermissionState(menu, 'can_update')"
+                                        :toggle-indeterminate="false"
+                                        @update:model-value="toggleParentPermission(menu, 'can_update', $event)"
+                                    />
+                                </div>
+                            </div>
                             <div class="q-pl-md">
                                 <div v-for="child in menu.children" :key="child.id" class="q-mb-md">
                                     <q-card class="q-pa-sm">
                                         <div class="row items-center">
-                                            <span class="text-subtitle2">{{ child.name }}</span>
+                                            <span class="text-subtitle2 permission-label text-weight-regular">{{ child.name }}</span>
                                             <div class="q-pl-md">
                                                 <q-checkbox
+                                                    class="text-weight-regular"
                                                     :label="'Visualizar'"
                                                     :model-value="isPermissionChecked(child.id, 'can_view')"
                                                     @update:model-value="togglePermission(child.id, 'can_view', $event)"
                                                 />
                                                 <q-checkbox
+                                                    class="text-weight-regular"
                                                     :label="'Criar'"
                                                     :model-value="isPermissionChecked(child.id, 'can_create')"
                                                     @update:model-value="togglePermission(child.id, 'can_create', $event)"
                                                 />
                                                 <q-checkbox
+                                                    class="text-weight-regular"
                                                     :label="'Atualizar'"
                                                     :model-value="isPermissionChecked(child.id, 'can_update')"
                                                     @update:model-value="togglePermission(child.id, 'can_update', $event)"
@@ -68,7 +96,7 @@
 
                         <!-- Leaf top-level menu: it is itself a permission unit. -->
                         <div v-else class="row items-center">
-                            <span class="text-subtitle1">{{ menu.name }}</span>
+                            <span class="text-subtitle1 permission-label">{{ menu.name }}</span>
                             <div class="q-pl-md">
                                 <q-checkbox
                                     :label="'Visualizar'"
@@ -157,6 +185,10 @@ export default defineComponent({
         })
 
         const onSubmit = async () => {
+            if (form.value.permissions.length === 0) {
+                notifyError('Selecione ao menos uma permissão!')
+                return
+            }
             form.value.id ? updateRole() : newRole()
         }
 
@@ -168,6 +200,24 @@ export default defineComponent({
             } else {
                 removePermission(menuId, permission)
             }
+        };
+
+        // Parent-level checkboxes drive every child at once. State is derived from the
+        // children: all checked -> true, some checked -> null (indeterminate), none -> false.
+        const parentPermissionState = (menu, permission) => {
+            const checkedCount = menu.children.filter(
+                child => isPermissionChecked(child.id, permission)
+            ).length
+
+            if (checkedCount === 0) return false
+            if (checkedCount === menu.children.length) return true
+            return null
+        };
+
+        const toggleParentPermission = (menu, permission, isChecked) => {
+            menu.children.forEach(
+                child => togglePermission(child.id, permission, isChecked)
+            )
         };
 
         const isPermissionOnArray = (menuId, permission) => {
@@ -298,6 +348,8 @@ export default defineComponent({
             activeInactive,
             isPermissionChecked,
             togglePermission,
+            parentPermissionState,
+            toggleParentPermission,
             isPermissionOnArray,
             addPermission,
             removePermission,
@@ -307,3 +359,11 @@ export default defineComponent({
     }
 })
 </script>
+
+<style scoped>
+.permission-label {
+    display: inline-block;
+    width: 180px;
+    flex-shrink: 0;
+}
+</style>

@@ -30,13 +30,12 @@
                 label="Perfil"
                 class="col-md-6 col-xs-12"
                 outlined
-                v-model="form.roles"
+                v-model="form.role"
                 :options="roles"
                 option-label="name"
                 option-value="id"
                 emit-value
                 map-options
-                multiple
                 :rules="[val => !!val || 'Campo Obrigatório!']"
             />
             <q-select
@@ -139,7 +138,7 @@ export default defineComponent({
             isPwd: true,
             name: null,
             status: STATUS.ACTIVE,
-            roles: [],
+            role: null,
             email: null,
             password: null,
             password_confirm: null
@@ -183,9 +182,9 @@ export default defineComponent({
             try {
                 const { data } = await getByID(id)
                 const userData = data.data;
-                userData.roles = userData.roles.map(role => role.id)
                 userData.status = userData.status?.id
-                Object.assign(form.value, data.data)
+                Object.assign(form.value, userData)
+                form.value.role = userData.role?.id ?? null
             } catch (error) {
                 notifyError(error.response.data.message)
                 router.push({ name: 'users' })
@@ -221,7 +220,7 @@ export default defineComponent({
         const makePayload = () => {                      
             const payload = {
                 name: form.value.name,
-                roles: form.value.roles,
+                role: form.value.role,
                 email: form.value.email,
                 status: form.value.status
             }            

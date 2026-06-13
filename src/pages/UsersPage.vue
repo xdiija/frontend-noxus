@@ -24,6 +24,18 @@
             </template>
             </q-input>
         </template>
+            <template v-slot:body-cell-role="props">
+                <q-td :props="props">
+                    <a
+                        v-if="props.row.role"
+                        class="text-primary cursor-pointer"
+                        @click="handleEditRole(props.row.role.id)"
+                    >
+                        {{ props.row.role.name }}
+                    </a>
+                    <span v-else>-</span>
+                </q-td>
+            </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
@@ -121,9 +133,16 @@ export default defineComponent({
                 align: 'left'
             },
             {
+                label: 'Perfil',
+                field: row => row.role?.name,
+                name: 'role',
+                sortable: true,
+                align: 'left'
+            },
+            {
                 label: 'Status',
                 field: row => row.status.name,
-                name: 'email',
+                name: 'status',
                 sortable: true,
                 align: 'left'
             },
@@ -199,6 +218,10 @@ export default defineComponent({
             router.push({ name: 'usersForm', params: { id } })
         }
 
+        const handleEditRole = (id) => {
+            router.push({ name: 'rolesForm', params: { id } })
+        }
+
         const handleDestroy = async (id) => {
             try {
                 $q.dialog({
@@ -242,6 +265,7 @@ export default defineComponent({
             onRequest,
             handleChangeStatus,
             handleEditUser,
+            handleEditRole,
             handleDestroy
         }
     }
