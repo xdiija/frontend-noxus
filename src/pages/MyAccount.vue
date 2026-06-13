@@ -49,7 +49,6 @@
                 readonly
                 v-model="form.status"
                 :options="activeInactive"
-                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -207,6 +206,7 @@ export default defineComponent({
                 const { data } = await getByID(id)
                 const userData = data.data;
                 userData.roles = userData.roles.map(role => role.id)
+                userData.status = userData.status?.id
                 Object.assign(form.value, data.data)
             } catch (error) {
                 notifyError(error.response.data.message)

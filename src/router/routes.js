@@ -75,72 +75,7 @@ const routes = [
                 path: 'suppliers-form/:id?',
                 name: 'suppliersForm',
                 component: () => import('src/pages/SuppliersForm.vue')
-            },
-            {
-                path: 'payment-methods',
-                name: 'paymentMethods',
-                component: () => import('src/pages/PaymentMethodsPage.vue')
-            },
-            {
-                path: 'payment-methods-form/:id?',
-                name: 'paymentMethodsForm',
-                component: () => import('src/pages/PaymentMethodsForm.vue')
-            },
-            {
-                path: 'transaction-categories',
-                name: 'transactionCategories',
-                component: () => import('src/pages/TransactionCategoriesPage.vue')
-            },
-            {
-                path: 'transaction-categories-form/:id?',
-                name: 'transactionCategoriesForm',
-                component: () => import('src/pages/TransactionCategoriesForm.vue')
-            },
-            {
-                path: 'cost-centers',
-                name: 'costCenters',
-                component: () => import('src/pages/CostCentersPage.vue')
-            },
-            {
-                path: 'cost-centers-form/:id?',
-                name: 'costCentersForm',
-                component: () => import('src/pages/CostCentersForm.vue')
-            },
-            {
-                path: 'transactions',
-                name: 'transactions',
-                component: () => import('src/pages/TransactionsPage.vue')
-            },
-            {
-                path: 'transactions-form-expense/:id?',
-                name: 'transactionsFormExpense',
-                component: () => import('src/pages/TransactionsFormExpense.vue')
-            },
-            {
-                path: 'transactions-form-income/:id?',
-                name: 'transactionsFormIncome',
-                component: () => import('src/pages/TransactionsFormIncome.vue')
-            },
-            {
-                path: 'transactions-form-transfer/:id?',
-                name: 'transactionsFormTransfer',
-                component: () => import('src/pages/TransactionsFormTransfer.vue')
-            },
-            {
-                path: 'payments',
-                name: 'payments',
-                component: () => import('src/pages/PaymentsPage.vue')
-            },
-            {
-                path: 'banks',
-                name: 'banks',
-                component: () => import('src/pages/BanksPage.vue')
-            },
-            {
-                path: 'banks-form/:id?',
-                name: 'banksForm',
-                component: () => import('src/pages/BanksForm.vue')
-            },
+            }
         ]
     },
     {

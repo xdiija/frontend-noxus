@@ -78,7 +78,6 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
-                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -117,7 +116,7 @@ import menusService from 'src/services/menusService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions';
+import { activeInactive, STATUS } from 'src/constants/statusOptions';
 
 const listRoute = 'menus';
 const headerProps = {
@@ -146,7 +145,7 @@ export default defineComponent({
             parent: null,
             route: "",
             exclusive_noxus: false,
-            status: null
+            status: STATUS.ACTIVE
         })
 
         const isEditMode = computed(() => !!route.params.id)
@@ -203,6 +202,7 @@ export default defineComponent({
                 const menuData = data.data;                
                 form.value = {
                     ...menuData,
+                    status: menuData.status?.id,
                     order: menuData.order.toString()
                 };
                 
@@ -249,7 +249,7 @@ export default defineComponent({
                 icon: form.value.icon,
                 order: form.value.order,
                 exclusive_noxus: form.value.exclusive_noxus,
-                status: form.value.status.id
+                status: form.value.status
             }
             // Key is immutable: only send it on create.
             if (!form.value.id) {
@@ -264,7 +264,7 @@ export default defineComponent({
             onReset () {
                 form.value = {
                     name: null,
-                    status: null
+                    status: STATUS.ACTIVE
                 }
             },
             headerProps,

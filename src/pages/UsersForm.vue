@@ -45,7 +45,6 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
-                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -114,7 +113,7 @@ import rolesService from 'src/services/rolesService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions';
+import { activeInactive, STATUS } from 'src/constants/statusOptions';
 
 const headerProps = {
     title: '',
@@ -139,7 +138,7 @@ export default defineComponent({
         const form = ref({
             isPwd: true,
             name: null,
-            status: null,
+            status: STATUS.ACTIVE,
             roles: [],
             email: null,
             password: null,
@@ -185,6 +184,7 @@ export default defineComponent({
                 const { data } = await getByID(id)
                 const userData = data.data;
                 userData.roles = userData.roles.map(role => role.id)
+                userData.status = userData.status?.id
                 Object.assign(form.value, data.data)
             } catch (error) {
                 notifyError(error.response.data.message)
@@ -223,7 +223,7 @@ export default defineComponent({
                 name: form.value.name,
                 roles: form.value.roles,
                 email: form.value.email,
-                status: form.value.status.id
+                status: form.value.status
             }            
             if (form.value.password) { payload.password = form.value.password }
             return payload

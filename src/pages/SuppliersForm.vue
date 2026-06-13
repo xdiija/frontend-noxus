@@ -39,11 +39,11 @@
             <q-input
                 outlined
                 v-model="form.email"
-                label="E-mail"
+                label="E-mail (Opcional)"
                 type="email"
                 lazy-rules
                 class="col-md-4 col-xs-12"
-                :rules="[ val => val && val.includes('@') || 'E-mail inválido']"
+                :rules="[ val => !val || val.includes('@') || 'E-mail inválido']"
             />
 
             <q-input
@@ -52,14 +52,14 @@
                 label="CNPJ"
                 lazy-rules
                 class="col-md-4 col-xs-12"
+                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
 
             <q-input
                 outlined
                 v-model="maskedPhone1"
-                label="Telefone 1"
+                label="Telefone 1 (Opcional)"
                 class="col-md-4 col-xs-12"
-                :rules="[ val => val && val.length >= 10 || 'Telefone inválido!']"
             />
 
             <q-input
@@ -74,8 +74,6 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
-                option-value="value"
-                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -108,7 +106,7 @@ import suppliersService from 'src/services/suppliersService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions'
+import { activeInactive, STATUS } from 'src/constants/statusOptions'
 import mask from '../utils/mask';
 
 const listRoute = 'suppliers'
@@ -138,7 +136,7 @@ export default defineComponent({
             cnpj: '',
             phone_1: '',
             phone_2: '',
-            status: ''
+            status: STATUS.ACTIVE
         })
 
         const isEditMode = computed(() => !!route.params.id)
@@ -161,6 +159,7 @@ export default defineComponent({
 
                 form.value = {
                     ...supplierData,
+                    status: supplierData.status?.id,
                     cnpj: cnpjMask(supplierData.cnpj),
                     phone_1: phoneMask(supplierData.phone_1),
                     phone_2: phoneMask(supplierData.phone_2),
@@ -205,7 +204,7 @@ export default defineComponent({
                 cnpj: unMask(form.value.cnpj),
                 phone_1: unMask(form.value.phone_1),
                 phone_2: unMask(form.value.phone_2),
-                status: form.value.status.id
+                status: form.value.status
             }
         }
 

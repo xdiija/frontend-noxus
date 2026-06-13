@@ -25,7 +25,6 @@
                 outlined
                 v-model="form.status"
                 :options="activeInactive"
-                option-label="name"
                 emit-value
                 map-options
                 :rules="[val => !!val || 'Campo Obrigatório!']"
@@ -119,7 +118,7 @@ import menusService from 'src/services/menusService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions';
+import { activeInactive, STATUS } from 'src/constants/statusOptions';
 
 const headerProps = {
     title: '',
@@ -143,7 +142,7 @@ export default defineComponent({
         const menus = ref([])
         const form = ref({
             name: null,
-            status: null,
+            status: STATUS.ACTIVE,
             permissions: []
         })
 
@@ -242,6 +241,7 @@ export default defineComponent({
                 const roleData = data.data;
                 form.value = {
                     ...roleData,
+                    status: roleData.status?.id,
                     permissions: permissionsToFrontend(roleData.permissions || []),
                 };                
             } catch (error) {
@@ -277,7 +277,7 @@ export default defineComponent({
         const makePayload = () => {    
             const payload = {
                 name: form.value.name,
-                status: form.value.status.id,
+                status: form.value.status,
                 permissions: permissionsToBackend(form.value.permissions),
             }
             return payload        
@@ -289,7 +289,7 @@ export default defineComponent({
             onReset () {
                 form.value = {
                     name: null,
-                    status: null,
+                    status: STATUS.ACTIVE,
                     permissions: []
                 }
             },
