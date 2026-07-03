@@ -5,7 +5,7 @@
             :title="headerProps.title"
             :btnTo="headerProps.btnTo"
             :btnIcon="headerProps.btnIcon"
-            :btnName="headerProps.btnName"
+            :btnName="canCreate('users') ? headerProps.btnName : ''"
         />
         <q-table
             :rows="rows"
@@ -39,6 +39,7 @@
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
+                        v-if="canUpdate('users')"
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
@@ -49,6 +50,7 @@
                         </q-tooltip>
                     </q-btn>
                     <q-btn
+                        v-if="canUpdate('users')"
                         icon="edit"
                         color="primary"
                         dense size="sm"
@@ -57,6 +59,7 @@
                         <q-tooltip class="bg-accent">Editar</q-tooltip>
                     </q-btn>
                     <q-btn
+                        v-if="canUpdate('users')"
                         icon="delete"
                         color="primary"
                         dense size="sm"
@@ -78,6 +81,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import usePermissions from 'src/composables/usePermissions'
 
 const headerProps = {
     title: 'Usuários',
@@ -110,6 +114,7 @@ export default defineComponent({
             rowsNumber: 0
         });
         const { list, changeStatus, destroy } = usersService()
+        const { canUpdate, canCreate } = usePermissions()
         const columns = [
             {
                 label: 'ID',
@@ -266,7 +271,9 @@ export default defineComponent({
             handleChangeStatus,
             handleEditUser,
             handleEditRole,
-            handleDestroy
+            handleDestroy,
+            canUpdate,
+            canCreate
         }
     }
 })

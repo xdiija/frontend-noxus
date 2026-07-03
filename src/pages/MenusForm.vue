@@ -18,16 +18,6 @@
                 class="col-md-4 col-xs-12"
                 :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
             />
-            <q-input
-                outlined
-                v-model="form.key"
-                label="Chave"
-                lazy-rules
-                class="col-md-4 col-xs-12"
-                :rules="keyRules"
-                :readonly="isEditMode"
-                hint="Identificador fixo das permissões (ex.: users). Não pode ser alterado depois de criado."
-            />
             <q-select
                 label="Menu Pai"
                 class="col-md-4 col-xs-12"
@@ -141,7 +131,6 @@ export default defineComponent({
         const parentMenus = ref([])
         const form = ref({
             name: null,
-            key: null,
             parent: null,
             route: "",
             exclusive_noxus: false,
@@ -154,12 +143,6 @@ export default defineComponent({
         const isRouteReadonly = ref(true);
         const isParentReadonly = ref(false);
         const routeRules = ref([]);
-
-        // Key is set once on create (slug) and is immutable afterwards.
-        const keyRules = computed(() => isEditMode.value ? [] : [
-            val => (val && val.length > 0) || 'Campo Obrigatório!',
-            val => /^[a-z0-9_]+$/.test(val) || 'Use apenas letras minúsculas, números e underline!'
-        ]);
 
         onMounted(async () => {
             if (route.params.id) {
@@ -251,10 +234,6 @@ export default defineComponent({
                 exclusive_noxus: form.value.exclusive_noxus,
                 status: form.value.status
             }
-            // Key is immutable: only send it on create.
-            if (!form.value.id) {
-                payload.key = form.value.key
-            }
             return payload
         }
 
@@ -273,7 +252,6 @@ export default defineComponent({
             isRouteReadonly,
             isParentReadonly,
             routeRules,
-            keyRules,
             isEditMode,
             listRoute,
             onParentChange

@@ -24,6 +24,7 @@ const routes = [
             {
                 path: 'users-form/:id?',
                 name: 'usersForm',
+                meta: { resource: 'users' },
                 component: () => import('src/pages/UsersForm.vue')
             },
             {
@@ -34,6 +35,7 @@ const routes = [
             {
                 path: 'roles-form/:id?',
                 name: 'rolesForm',
+                meta: { resource: 'roles' },
                 component: () => import('src/pages/RolesForm.vue')
             },
             {
@@ -44,6 +46,7 @@ const routes = [
             {
                 path: 'menus-form/:id?',
                 name: 'menusForm',
+                meta: { resource: 'menus' },
                 component: () => import('src/pages/MenusForm.vue')
             },
             {
@@ -54,6 +57,7 @@ const routes = [
             {
                 path: 'accounts-form/:id?',
                 name: 'accountsForm',
+                meta: { resource: 'accounts' },
                 component: () => import('src/pages/AccountsForm.vue')
             },
             {
@@ -64,6 +68,7 @@ const routes = [
             {
                 path: 'customers-form/:id?',
                 name: 'customersForm',
+                meta: { resource: 'customers' },
                 component: () => import('src/pages/CustomersForm.vue')
             },
             {
@@ -74,6 +79,7 @@ const routes = [
             {
                 path: 'suppliers-form/:id?',
                 name: 'suppliersForm',
+                meta: { resource: 'suppliers' },
                 component: () => import('src/pages/SuppliersForm.vue')
             }
         ]

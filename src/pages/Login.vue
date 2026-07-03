@@ -67,19 +67,24 @@ export default {
     },
     methods: {
         async onSubmit () {
-            const { post, setUser, setMenus } = authService('login')
+            const { post, setUser, setMenus, setPermissions } = authService('login')
             const { notifyError } = notifications()
             const userCredentials = { email: this.login.email, password: this.login.password }
             try {
-                const { data } = await post(userCredentials)       
+                const { data } = await post(userCredentials)
                 setUser(data.user)
                 setMenus(data.menus)
+                setPermissions(data.permissions)
                 this.$router.push({ name: 'home' })
             } catch (error) {                
                 if(error.code == 'ERR_NETWORK'){
                     notifyError("Erro de conexão com o servidor. Tente novamente mais tarde.")
                 }else if (error.response && error.response.status === 401) {
-                    notifyError("Email ou senha incorretos.")
+                    if (error.response.data?.error === 'inactive_user') {
+                        notifyError("Usuário inativo. Contate o administrador.")
+                    } else {
+                        notifyError("Email ou senha incorretos.")
+                    }
                 } else {
                     console.error(error)
                     notifyError("Erro ao efetuar login. Tente novamente.")

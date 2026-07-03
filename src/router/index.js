@@ -2,6 +2,8 @@ import { route } from 'quasar/wrappers'
 import { createRouter, createMemoryHistory, createWebHistory, createWebHashHistory } from 'vue-router'
 import routes from './routes'
 import authService from 'src/services/authService'
+import usePermissions from 'src/composables/usePermissions'
+import notifications from 'src/utils/notifications'
 
 let previousRoute = null;
 export function getPreviousRoute() {
@@ -34,6 +36,21 @@ export default route(function (/* { store, ssrContext } */) {
 
                 if (!tokenValid) {
                     next({ name: 'login' })
+                } else if (to.meta.resource) {
+                    // Form routes: editing needs 'update', creating needs 'create'.
+                    // Block direct URL access and warn instead of rendering the form.
+                    const { canUpdate, canCreate } = usePermissions()
+                    const isEdit = !!to.params.id
+                    const allowed = isEdit
+                        ? canUpdate(to.meta.resource)
+                        : canCreate(to.meta.resource)
+
+                    if (!allowed) {
+                        notifications().notifyError('Você não tem permissão para acessar este conteúdo.')
+                        next({ name: 'home' })
+                    } else {
+                        next()
+                    }
                 } else {
                     next()
                 }

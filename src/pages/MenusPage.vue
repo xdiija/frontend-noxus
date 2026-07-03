@@ -5,12 +5,13 @@
         :title="headerProps.title"
         :btnTo="headerProps.btnTo"
         :btnIcon="headerProps.btnIcon"
-        :btnName="headerProps.btnName"
+        :btnName="canCreate('menus') ? headerProps.btnName : ''"
     />
         <q-table :rows="rows" :columns="columns" row-key="name">
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <q-btn
+                        v-if="canUpdate('menus')"
                         :icon="props.row.status.name === 'Ativo' ? 'toggle_on' : 'toggle_off'"
                         :color="props.row.status.name === 'Ativo' ? 'positive' : 'negative'"
                         dense size="sm"
@@ -20,6 +21,7 @@
                         </q-tooltip>
                     </q-btn>
                     <q-btn
+                        v-if="canUpdate('menus')"
                         icon="edit"
                         color="primary"
                         dense size="sm"
@@ -30,6 +32,7 @@
                         </q-tooltip>
                     </q-btn>
                     <q-btn
+                        v-if="canUpdate('menus')"
                         icon="delete"
                         color="primary"
                         dense size="sm"
@@ -51,6 +54,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import usePermissions from 'src/composables/usePermissions'
 
 const headerProps = {
     title: 'Menus',
@@ -74,6 +78,7 @@ export default defineComponent({
         const router = useRouter()
         const rows = ref([])
         const { list, changeStatus, destroy } = menusService()
+        const { canUpdate, canCreate } = usePermissions()
         const columns = [
             {
                 label: 'ID',
@@ -90,24 +95,10 @@ export default defineComponent({
                 align: 'left'
             },
             {
-                label: 'Chave',
-                field: 'key',
-                name: 'key',
-                sortable: true,
-                align: 'left'
-            },
-            {
                 label: 'Rota',
                 field: 'route',
                 field: row => (row.route && row.route != "") ? row.route : '-',
                 name: 'route',
-                sortable: true,
-                align: 'left'
-            },
-            {
-                label: 'Ícone',
-                field: 'icon',
-                name: 'icon',
                 sortable: true,
                 align: 'left'
             },
@@ -225,7 +216,9 @@ export default defineComponent({
             columns,
             handleChangeStatus,
             handleEditMenu,
-            handleDestroy
+            handleDestroy,
+            canUpdate,
+            canCreate
         }
     }
 })
