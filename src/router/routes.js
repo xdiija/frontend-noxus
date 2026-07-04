@@ -50,17 +50,6 @@ const routes = [
                 component: () => import('src/pages/MenusForm.vue')
             },
             {
-                path: 'accounts',
-                name: 'accounts',
-                component: () => import('src/pages/AccountsPage.vue')
-            },
-            {
-                path: 'accounts-form/:id?',
-                name: 'accountsForm',
-                meta: { resource: 'accounts' },
-                component: () => import('src/pages/AccountsForm.vue')
-            },
-            {
                 path: 'customers',
                 name: 'customers',
                 component: () => import('src/pages/CustomersPage.vue')
@@ -81,6 +70,40 @@ const routes = [
                 name: 'suppliersForm',
                 meta: { resource: 'suppliers' },
                 component: () => import('src/pages/SuppliersForm.vue')
+            },
+            // Shelter module — animal reference data (Module 1 lookups)
+            {
+                path: 'animal-sizes',
+                name: 'animalSizes',
+                component: () => import('src/pages/AnimalSizesPage.vue')
+            },
+            {
+                path: 'animal-sizes-form/:id?',
+                name: 'animalSizesForm',
+                meta: { resource: 'animal-sizes' },
+                component: () => import('src/pages/AnimalSizesForm.vue')
+            },
+            {
+                path: 'animal-statuses',
+                name: 'animalStatuses',
+                component: () => import('src/pages/AnimalStatusesPage.vue')
+            },
+            {
+                path: 'animal-statuses-form/:id?',
+                name: 'animalStatusesForm',
+                meta: { resource: 'animal-statuses' },
+                component: () => import('src/pages/AnimalStatusesForm.vue')
+            },
+            {
+                path: 'tags',
+                name: 'tags',
+                component: () => import('src/pages/TagsPage.vue')
+            },
+            {
+                path: 'tags-form/:id?',
+                name: 'tagsForm',
+                meta: { resource: 'tags' },
+                component: () => import('src/pages/TagsForm.vue')
             }
         ]
     },
