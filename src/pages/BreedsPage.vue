@@ -5,7 +5,7 @@
             :title="headerProps.title"
             :btnTo="headerProps.btnTo"
             :btnIcon="headerProps.btnIcon"
-            :btnName="canCreate('tags') ? headerProps.btnName : ''"
+            :btnName="canCreate('breeds') ? headerProps.btnName : ''"
         />
         <q-table
             :rows="rows"
@@ -16,6 +16,21 @@
             :rows-per-page-options="[10, 20, 50]"
         >
             <template v-slot:top-right>
+                <q-select
+                    dense
+                    outlined
+                    class="q-mr-sm"
+                    style="min-width: 180px"
+                    v-model="speciesFilter"
+                    :options="speciesOptions"
+                    option-value="id"
+                    option-label="name"
+                    emit-value
+                    map-options
+                    clearable
+                    label="Espécie"
+                    @update:model-value="getBreeds"
+                />
                 <q-input dense debounce="300" v-model="filter" placeholder="Busca">
                     <template v-slot:append>
                         <q-icon name="search" />
@@ -24,7 +39,7 @@
             </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
-                    <template v-if="canUpdate('tags')">
+                    <template v-if="canUpdate('breeds')">
                         <q-btn
                             icon="edit"
                             color="primary"
@@ -50,7 +65,8 @@
 
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
-import tagsService from 'src/services/tagsService'
+import breedsService from 'src/services/breedsService'
+import speciesService from 'src/services/speciesService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
@@ -58,14 +74,14 @@ import notifications from '../utils/notifications'
 import usePermissions from 'src/composables/usePermissions'
 
 const headerProps = {
-    title: 'Etiquetas',
-    btnTo: 'tagsForm',
+    title: 'Raças',
+    btnTo: 'breedsForm',
     btnIcon: 'add',
     btnName: 'Adicionar'
 }
 
 export default defineComponent({
-    name: 'TagsPage',
+    name: 'BreedsPage',
     components: { ViewHeader },
     setup () {
         const $q = useQuasar()
@@ -74,20 +90,24 @@ export default defineComponent({
         const rows = ref([])
         const filter = ref('')
         const loading = ref(false)
-        const { list, destroy } = tagsService()
+        const speciesOptions = ref([])
+        const speciesFilter = ref(null)
+        const { list, destroy } = breedsService()
+        const { list: listSpecies } = speciesService()
         const { canCreate, canUpdate } = usePermissions()
 
         const columns = [
             { label: 'ID', field: 'id', name: 'id', sortable: true, align: 'left' },
             { label: 'Nome', field: 'name', name: 'name', sortable: true, align: 'left' },
+            { label: 'Espécie', field: row => row.species?.name, name: 'species', sortable: true, align: 'left' },
             { label: 'Ações', field: 'actions', name: 'actions', align: 'right' }
         ]
 
-        const getTags = async () => {
+        const getBreeds = async () => {
             loading.value = true
 
             try {
-                const { data } = await list()
+                const { data } = await list('', { species_id: speciesFilter.value })
                 rows.value = data.data
             } catch (error) {
                 console.error('Erro na requisição:', error)
@@ -96,29 +116,39 @@ export default defineComponent({
             }
         }
 
+        const getSpecies = async () => {
+            try {
+                const { data } = await listSpecies()
+                speciesOptions.value = data.data
+            } catch (error) {
+                console.error('Erro na requisição:', error)
+            }
+        }
+
         onMounted(() => {
-            getTags()
+            getSpecies()
+            getBreeds()
         })
 
         const handleEdit = (id) => {
-            router.push({ name: 'tagsForm', params: { id } })
+            router.push({ name: 'breedsForm', params: { id } })
         }
 
         const handleDestroy = async (id) => {
             try {
                 $q.dialog({
                     title: 'Confirmação',
-                    message: 'Deseja mesmo excluir esta etiqueta?',
+                    message: 'Deseja mesmo excluir esta raça?',
                     cancel: { label: 'Cancelar', color: 'primary', outline: true },
                     ok: { label: 'Confirmar', color: 'primary' },
                     persistent: true
                 }).onOk(async () => {
                     await destroy(id)
-                    notifySuccess('Etiqueta removida com sucesso!')
-                    await getTags()
+                    notifySuccess('Raça removida com sucesso!')
+                    await getBreeds()
                 })
             } catch (error) {
-                notifyError('Erro ao excluir etiqueta!')
+                notifyError('Erro ao excluir raça!')
             }
         }
 
@@ -128,6 +158,9 @@ export default defineComponent({
             columns,
             filter,
             loading,
+            speciesOptions,
+            speciesFilter,
+            getBreeds,
             handleEdit,
             handleDestroy,
             canCreate,

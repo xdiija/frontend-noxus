@@ -71,7 +71,53 @@ const routes = [
                 meta: { resource: 'suppliers' },
                 component: () => import('src/pages/SuppliersForm.vue')
             },
+            // Shelter module — animals (Module 2)
+            {
+                path: 'animals',
+                name: 'animals',
+                component: () => import('src/pages/AnimalsPage.vue')
+            },
+            {
+                path: 'animals-form/:id?',
+                name: 'animalsForm',
+                meta: { resource: 'animals' },
+                component: () => import('src/pages/AnimalsForm.vue')
+            },
+            // Shelter module — adoptions (Module 3)
+            {
+                path: 'adopters',
+                name: 'adopters',
+                component: () => import('src/pages/AdoptersPage.vue')
+            },
+            {
+                path: 'adopters-form/:id?',
+                name: 'adoptersForm',
+                meta: { resource: 'adopters' },
+                component: () => import('src/pages/AdoptersForm.vue')
+            },
+            {
+                path: 'adoptions',
+                name: 'adoptions',
+                component: () => import('src/pages/AdoptionsPage.vue')
+            },
+            {
+                path: 'adoptions-form/:id?',
+                name: 'adoptionsForm',
+                meta: { resource: 'adoptions' },
+                component: () => import('src/pages/AdoptionsForm.vue')
+            },
             // Shelter module — animal reference data (Module 1 lookups)
+            {
+                path: 'breeds',
+                name: 'breeds',
+                component: () => import('src/pages/BreedsPage.vue')
+            },
+            {
+                path: 'breeds-form/:id?',
+                name: 'breedsForm',
+                meta: { resource: 'breeds' },
+                component: () => import('src/pages/BreedsForm.vue')
+            },
             {
                 path: 'animal-sizes',
                 name: 'animalSizes',

@@ -101,25 +101,10 @@ export default defineComponent({
 				links.push(link)
 			});
 
-			links.push(shelterMenu())
-
 			links.push(newLink({ name: "Logout", icon: "exit_to_app", route: "/logout" }, 0))
 
 			return links
         }
-
-		// Shelter module (Module 1) reference-data menu. Added statically because
-		// roles/permissions for shelter resources are deferred — these pages
-		// aren't served through the permission-gated backend menu yet.
-		const shelterMenu = () => {
-			const group = newLink({ name: "Abrigo", icon: "pets", route: null }, 0)
-
-			group.children.push(newLink({ name: "Portes", icon: "straighten", route: "/animal-sizes" }, 1))
-			group.children.push(newLink({ name: "Status dos Animais", icon: "flag", route: "/animal-statuses" }, 1))
-			group.children.push(newLink({ name: "Etiquetas", icon: "sell", route: "/tags" }, 1))
-
-			return group
-		}
 
 		const newLink = (menu, level) => {
 			

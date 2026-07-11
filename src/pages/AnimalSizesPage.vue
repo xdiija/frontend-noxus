@@ -5,7 +5,7 @@
             :title="headerProps.title"
             :btnTo="headerProps.btnTo"
             :btnIcon="headerProps.btnIcon"
-            :btnName="headerProps.btnName"
+            :btnName="canCreate('animal-sizes') ? headerProps.btnName : ''"
         />
         <q-table
             :rows="rows"
@@ -22,16 +22,9 @@
                     </template>
                 </q-input>
             </template>
-            <template v-slot:body-cell-is_custom="props">
-                <q-td :props="props">
-                    <q-badge :color="props.row.is_custom ? 'primary' : 'grey-6'">
-                        {{ props.row.is_custom ? 'Personalizado' : 'Padrão do sistema' }}
-                    </q-badge>
-                </q-td>
-            </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
-                    <template v-if="props.row.is_custom">
+                    <template v-if="canUpdate('animal-sizes')">
                         <q-btn
                             icon="edit"
                             color="primary"
@@ -49,9 +42,6 @@
                             <q-tooltip class="bg-accent">Excluir</q-tooltip>
                         </q-btn>
                     </template>
-                    <q-icon v-else name="lock" color="grey-6" size="sm">
-                        <q-tooltip class="bg-accent">Somente leitura</q-tooltip>
-                    </q-icon>
                 </q-td>
             </template>
         </q-table>
@@ -65,6 +55,7 @@ import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
+import usePermissions from 'src/composables/usePermissions'
 
 const headerProps = {
     title: 'Portes',
@@ -84,12 +75,12 @@ export default defineComponent({
         const filter = ref('')
         const loading = ref(false)
         const { list, destroy } = animalSizesService()
+        const { canCreate, canUpdate } = usePermissions()
 
         const columns = [
             { label: 'ID', field: 'id', name: 'id', sortable: true, align: 'left' },
             { label: 'Nome', field: 'name', name: 'name', sortable: true, align: 'left' },
             { label: 'Ordem', field: 'sort_order', name: 'sort_order', sortable: true, align: 'left' },
-            { label: 'Tipo', field: 'is_custom', name: 'is_custom', sortable: true, align: 'left' },
             { label: 'Ações', field: 'actions', name: 'actions', align: 'right' }
         ]
 
@@ -139,7 +130,9 @@ export default defineComponent({
             filter,
             loading,
             handleEdit,
-            handleDestroy
+            handleDestroy,
+            canCreate,
+            canUpdate
         }
     }
 })
