@@ -71,6 +71,18 @@ const routes = [
                 meta: { resource: 'suppliers' },
                 component: () => import('src/pages/SuppliersForm.vue')
             },
+            // Organizations (tenant management) — Noxus-only menu (exclusive_noxus)
+            {
+                path: 'organizations',
+                name: 'organizations',
+                component: () => import('src/pages/OrganizationsPage.vue')
+            },
+            {
+                path: 'organizations-form/:id?',
+                name: 'organizationsForm',
+                meta: { resource: 'organizations' },
+                component: () => import('src/pages/OrganizationsForm.vue')
+            },
             // Shelter module — animals (Module 2)
             {
                 path: 'animals',
@@ -105,6 +117,29 @@ const routes = [
                 name: 'adoptionsForm',
                 meta: { resource: 'adoptions' },
                 component: () => import('src/pages/AdoptionsForm.vue')
+            },
+            // Shelter module — fostering & volunteers (Module 5)
+            {
+                path: 'foster-homes',
+                name: 'fosterHomes',
+                component: () => import('src/pages/FosterHomesPage.vue')
+            },
+            {
+                path: 'foster-homes-form/:id?',
+                name: 'fosterHomesForm',
+                meta: { resource: 'foster-homes' },
+                component: () => import('src/pages/FosterHomesForm.vue')
+            },
+            {
+                path: 'volunteers',
+                name: 'volunteers',
+                component: () => import('src/pages/VolunteersPage.vue')
+            },
+            {
+                path: 'volunteers-form/:id?',
+                name: 'volunteersForm',
+                meta: { resource: 'volunteers' },
+                component: () => import('src/pages/VolunteersForm.vue')
             },
             // Shelter module — animal reference data (Module 1 lookups)
             {
