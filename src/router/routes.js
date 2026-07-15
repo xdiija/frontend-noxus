@@ -141,6 +141,52 @@ const routes = [
                 meta: { resource: 'volunteers' },
                 component: () => import('src/pages/VolunteersForm.vue')
             },
+            // Shelter module — kennels (Module 8)
+            {
+                path: 'kennels',
+                name: 'kennels',
+                component: () => import('src/pages/KennelsPage.vue')
+            },
+            {
+                path: 'kennels-form/:id?',
+                name: 'kennelsForm',
+                meta: { resource: 'kennels' },
+                component: () => import('src/pages/KennelsForm.vue')
+            },
+            // Shelter module — finance (Module 6)
+            {
+                path: 'donors',
+                name: 'donors',
+                component: () => import('src/pages/DonorsPage.vue')
+            },
+            {
+                path: 'donors-form/:id?',
+                name: 'donorsForm',
+                meta: { resource: 'donors' },
+                component: () => import('src/pages/DonorsForm.vue')
+            },
+            {
+                path: 'donations',
+                name: 'donations',
+                component: () => import('src/pages/DonationsPage.vue')
+            },
+            {
+                path: 'donations-form/:id?',
+                name: 'donationsForm',
+                meta: { resource: 'donations' },
+                component: () => import('src/pages/DonationsForm.vue')
+            },
+            {
+                path: 'expenses',
+                name: 'expenses',
+                component: () => import('src/pages/ExpensesPage.vue')
+            },
+            {
+                path: 'expenses-form/:id?',
+                name: 'expensesForm',
+                meta: { resource: 'expenses' },
+                component: () => import('src/pages/ExpensesForm.vue')
+            },
             // Shelter module — animal reference data (Module 1 lookups)
             {
                 path: 'breeds',
@@ -185,6 +231,19 @@ const routes = [
                 name: 'tagsForm',
                 meta: { resource: 'tags' },
                 component: () => import('src/pages/TagsForm.vue')
+            },
+            // Shelter module — cross-cutting / system (Module 7). Both are
+            // list-only: documents create/edit happen in dialogs, the audit
+            // trail is read-only.
+            {
+                path: 'documents',
+                name: 'documents',
+                component: () => import('src/pages/DocumentsPage.vue')
+            },
+            {
+                path: 'audit-logs',
+                name: 'auditLogs',
+                component: () => import('src/pages/AuditLogsPage.vue')
             }
         ]
     },

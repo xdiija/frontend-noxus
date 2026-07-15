@@ -6,6 +6,13 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="headerProps.btnName"
         />
+        <!-- Current location (Module 8): open kennel stay or open foster stay. -->
+        <q-banner v-if="currentLocation" dense rounded class="bg-blue-1 text-primary q-mb-sm">
+            <template v-slot:avatar>
+                <q-icon :name="currentLocation.icon" />
+            </template>
+            {{ currentLocation.label }}
+        </q-banner>
         <q-form @submit="onSubmit" class="row q-col-gutter-sm">
             <q-input
                 outlined
@@ -434,6 +441,8 @@ export default defineComponent({
 
         const isEditMode = computed(() => !!route.params.id)
         const hasRescue = ref(false)
+        // { icon, label } for the location banner; null when no open stay.
+        const currentLocation = ref(null)
         headerProps.title = isEditMode.value ? 'Editar Animal' : 'Cadastrar Animal'
 
         onMounted(async () => {
@@ -512,6 +521,11 @@ export default defineComponent({
                 }
                 hasRescue.value = !!animal.rescue
                 images.value = animal.images || []
+                currentLocation.value = animal.current_kennel
+                    ? { icon: 'fence', label: `Localização atual: Canil ${animal.current_kennel.name}` }
+                    : animal.current_foster_home
+                        ? { icon: 'night_shelter', label: `Localização atual: Lar temporário de ${animal.current_foster_home.responsible_name}` }
+                        : null
             } catch (error) {
                 notifyError(error.response?.data?.message || 'Erro ao carregar animal!')
                 router.push({ name: listRoute })
@@ -625,6 +639,7 @@ export default defineComponent({
             tagOptions,
             sexOptions,
             hasRescue,
+            currentLocation,
             isEditMode,
             images,
             newImage,

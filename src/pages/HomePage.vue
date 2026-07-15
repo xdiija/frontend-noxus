@@ -80,6 +80,47 @@
             </q-card-section>
           </q-card>
         </div>
+
+        <!-- Agenda: consultas agendadas + retornos sugeridos (org-wide) -->
+        <div class="col-12">
+          <q-card>
+            <q-card-section>
+              <div class="text-subtitle1">Agenda — próximos {{ UPCOMING_DAYS }} dias</div>
+              <div v-if="!upcoming.length" class="text-caption text-grey-7 q-mt-sm">
+                Nenhuma consulta ou retorno no período.
+              </div>
+              <q-list v-else separator>
+                <q-item v-for="(item, index) in upcoming" :key="index">
+                  <q-item-section avatar>
+                    <q-icon
+                      :name="item.kind === 'appointment' ? 'event' : 'undo'"
+                      color="primary"
+                    />
+                  </q-item-section>
+                  <q-item-section>
+                    <q-item-label>
+                      {{ item.animal?.name || '—' }}
+                      <q-chip
+                        dense
+                        :color="item.kind === 'appointment' ? 'primary' : 'teal'"
+                        text-color="white"
+                        class="q-ml-sm"
+                      >
+                        {{ item.kind === 'appointment' ? 'Consulta' : 'Retorno' }}
+                      </q-chip>
+                    </q-item-label>
+                    <q-item-label caption>
+                      {{ [item.purpose, item.veterinarian, item.clinic].filter(Boolean).join(' · ') || 'Sem detalhes' }}
+                    </q-item-label>
+                  </q-item-section>
+                  <q-item-section side>
+                    <q-item-label>{{ item.date }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-card-section>
+          </q-card>
+        </div>
       </div>
     </template>
   </q-page>
@@ -88,10 +129,7 @@
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
 import ApexChart from 'vue3-apexcharts'
-import animalStatusesService from 'src/services/animalStatusesService'
-import animalsService from 'src/services/animalsService'
-import adoptionsService from 'src/services/adoptionsService'
-import volunteersService from 'src/services/volunteersService'
+import dashboardService from 'src/services/dashboardService'
 import notifications from '../utils/notifications'
 
 // Chart chrome shared across every chart on this page (dataviz skill § chrome & ink).
@@ -104,47 +142,11 @@ const TERMINAL_STATUSES = ['Adotado', 'Óbito']
 
 const MONTH_NAMES_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-// dd/mm/yyyy or dd/mm/yyyy HH:mm:ss (API dates are always BR-formatted) -> yyyy-mm
-const brDateToMonthKey = (value) => {
-    if (!value) return null
-    const [datePart] = value.split(' ')
-    const [d, m, y] = datePart.split('/')
-    return (d && m && y) ? `${y}-${m}` : null
-}
+const TREND_MONTHS = 6
+const UPCOMING_DAYS = 30
 
-// The last n calendar months (oldest first), so a month with zero events still
-// renders as a zero bar/point instead of being silently skipped.
-const lastNMonths = (n) => {
-    const months = []
-    const now = new Date()
-    for (let i = n - 1; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-        months.push({
-            key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-            label: MONTH_NAMES_PT[d.getMonth()]
-        })
-    }
-    return months
-}
-
-// Pages through a paginated index endpoint (max per_page is 100) to get every
-// row for client-side aggregation — fine at shelter scale, but a real reporting
-// endpoint (Module 7) would be the right move if org sizes grow a lot.
-const fetchAllPages = async (listFn) => {
-    const perPage = 100
-    let page = 1
-    let lastPage = 1
-    let rows = []
-
-    do {
-        const { data } = await listFn('', { page, per_page: perPage })
-        rows = rows.concat(data.data)
-        lastPage = data.meta?.last_page ?? 1
-        page++
-    } while (page <= lastPage)
-
-    return rows
-}
+// 'YYYY-MM' (dashboard bucket key) -> PT month label
+const monthLabel = (key) => MONTH_NAMES_PT[parseInt(key.split('-')[1], 10) - 1]
 
 export default defineComponent({
     name: 'HomePage',
@@ -155,6 +157,7 @@ export default defineComponent({
 
         const loading = ref(true)
         const statTiles = ref([])
+        const upcoming = ref([])
 
         const statusChartSeries = ref([])
         const statusChartOptions = ref({})
@@ -171,21 +174,19 @@ export default defineComponent({
         // consistency with the status chips used everywhere else in the app; the
         // status name is always printed on the axis right beside its bar, so
         // identity never depends on distinguishing the hues themselves.
-        const buildStatusChart = (statuses, animals) => {
-            const sorted = [...statuses].sort((a, b) => a.sort_order - b.sort_order)
-            const counts = sorted.map(status => animals.filter(a => a.status?.id === status.id).length)
-
-            statusChartSeries.value = [{ name: 'Animais', data: counts }]
+        // `statuses` already arrives counted and ordered by sort_order.
+        const buildStatusChart = (statuses) => {
+            statusChartSeries.value = [{ name: 'Animais', data: statuses.map(status => status.count) }]
             statusChartOptions.value = {
                 chart: { id: 'animais-status', toolbar: { show: false } },
                 plotOptions: {
                     bar: { horizontal: true, distributed: true, borderRadius: 4, barHeight: '55%' }
                 },
-                colors: sorted.map(status => status.color || '#2a78d6'),
+                colors: statuses.map(status => status.color || '#2a78d6'),
                 dataLabels: { enabled: true, style: { colors: [DATA_LABEL_COLOR] }, formatter: (val) => val },
                 legend: { show: false },
                 grid: { borderColor: GRID_COLOR, strokeDashArray: 0 },
-                xaxis: { categories: sorted.map(status => status.name), labels: { style: { colors: AXIS_LABEL_COLOR } } },
+                xaxis: { categories: statuses.map(status => status.name), labels: { style: { colors: AXIS_LABEL_COLOR } } },
                 yaxis: { labels: { style: { colors: AXIS_LABEL_COLOR } } },
                 tooltip: { y: { formatter: (val) => `${val} animal(is)` } }
             }
@@ -193,15 +194,9 @@ export default defineComponent({
 
         // Animais por Espécie — plain magnitude comparison, so a single flat hue
         // (not one color per species): the x-axis labels already carry identity.
-        const buildSpeciesChart = (animals) => {
-            const counts = {}
-            animals.forEach(a => {
-                const name = a.species?.name || 'Não informado'
-                counts[name] = (counts[name] || 0) + 1
-            })
-            const entries = Object.entries(counts).sort((a, b) => b[1] - a[1])
-
-            speciesChartSeries.value = [{ name: 'Animais', data: entries.map(e => e[1]) }]
+        // `species` already arrives counted and ordered by count desc.
+        const buildSpeciesChart = (species) => {
+            speciesChartSeries.value = [{ name: 'Animais', data: species.map(s => s.count) }]
             speciesChartOptions.value = {
                 chart: { id: 'animais-especie', toolbar: { show: false } },
                 plotOptions: { bar: { borderRadius: 4, columnWidth: '45%' } },
@@ -215,22 +210,19 @@ export default defineComponent({
                 },
                 legend: { show: false },
                 grid: { borderColor: GRID_COLOR, strokeDashArray: 0 },
-                xaxis: { categories: entries.map(e => e[0]), labels: { style: { colors: AXIS_LABEL_COLOR } } },
+                xaxis: { categories: species.map(s => s.name), labels: { style: { colors: AXIS_LABEL_COLOR } } },
                 yaxis: { labels: { style: { colors: AXIS_LABEL_COLOR } } }
             }
         }
 
         // Adoções por Mês (single series, one flat hue) and Resgates x Adoções
         // (two series over the same months — the one place two hues are needed to
-        // tell them apart, plus a legend).
-        const buildMonthlyCharts = (months, animals, adoptions) => {
-            const labels = months.map(m => m.label)
-            const rescueCounts = months.map(({ key }) =>
-                animals.filter(a => a.rescue && brDateToMonthKey(a.rescue.rescue_date) === key).length
-            )
-            const adoptionCounts = months.map(({ key }) =>
-                adoptions.filter(ad => brDateToMonthKey(ad.adoption_date) === key).length
-            )
+        // tell them apart, plus a legend). `trends` arrives pre-bucketed per
+        // month (oldest first, zero months included).
+        const buildMonthlyCharts = (trends) => {
+            const labels = trends.map(t => monthLabel(t.month))
+            const adoptionCounts = trends.map(t => t.adoptions)
+            const rescueCounts = trends.map(t => t.rescues)
 
             adoptionsChartSeries.value = [{ name: 'Adoções', data: adoptionCounts }]
             adoptionsChartOptions.value = {
@@ -273,17 +265,14 @@ export default defineComponent({
             }
         }
 
-        const buildStatTiles = (animals, adoptions, volunteers, months) => {
-            const underCare = animals.filter(a => !TERMINAL_STATUSES.includes(a.status?.name)).length
-            const fosteredNow = animals.filter(a => a.status?.name === 'Em Lar Temporário').length
-            const activeVolunteers = volunteers.filter(v => v.status?.name === 'Ativo').length
+        const buildStatTiles = (summary, trends) => {
+            const byName = Object.fromEntries(summary.animals_by_status.map(s => [s.name, s.count]))
+            const underCare = summary.animals_by_status
+                .filter(s => !TERMINAL_STATUSES.includes(s.name))
+                .reduce((total, s) => total + s.count, 0)
 
-            const currentKey = months[months.length - 1].key
-            const previousKey = months[months.length - 2]?.key
-            const thisMonth = adoptions.filter(ad => brDateToMonthKey(ad.adoption_date) === currentKey).length
-            const previousMonth = previousKey
-                ? adoptions.filter(ad => brDateToMonthKey(ad.adoption_date) === previousKey).length
-                : null
+            const thisMonth = trends[trends.length - 1]?.adoptions ?? 0
+            const previousMonth = trends.length > 1 ? trends[trends.length - 2].adoptions : null
 
             let delta = null
             if (previousMonth !== null) {
@@ -297,32 +286,31 @@ export default defineComponent({
 
             statTiles.value = [
                 { label: 'Animais sob cuidado', value: underCare },
-                { label: 'Em lar temporário', value: fosteredNow },
-                { label: 'Voluntários ativos', value: activeVolunteers },
+                { label: 'Em lar temporário', value: byName['Em Lar Temporário'] || 0 },
+                { label: 'Voluntários ativos', value: summary.active_volunteers },
                 { label: 'Adoções este mês', value: thisMonth, delta }
             ]
         }
 
         onMounted(async () => {
-            const { list: listStatuses } = animalStatusesService()
-            const { list: listAnimals } = animalsService()
-            const { list: listAdoptions } = adoptionsService()
-            const { list: listVolunteers } = volunteersService()
+            const { summary, monthlyTrends, upcomingAppointments } = dashboardService()
 
             try {
-                const [statusesRes, animals, adoptions, volunteers] = await Promise.all([
-                    listStatuses(),
-                    fetchAllPages(listAnimals),
-                    fetchAllPages(listAdoptions),
-                    fetchAllPages(listVolunteers)
+                // Everything arrives pre-aggregated and org-scoped from the
+                // dashboard endpoints (Module 7) — no client-side pagination loops.
+                const [summaryRes, trendsRes, upcomingRes] = await Promise.all([
+                    summary(),
+                    monthlyTrends(TREND_MONTHS),
+                    upcomingAppointments(UPCOMING_DAYS)
                 ])
-                const statuses = statusesRes.data.data
-                const months = lastNMonths(6)
+                const summaryData = summaryRes.data.data
+                const trends = trendsRes.data.data
 
-                buildStatusChart(statuses, animals)
-                buildSpeciesChart(animals)
-                buildMonthlyCharts(months, animals, adoptions)
-                buildStatTiles(animals, adoptions, volunteers, months)
+                buildStatusChart(summaryData.animals_by_status)
+                buildSpeciesChart(summaryData.animals_by_species)
+                buildMonthlyCharts(trends)
+                buildStatTiles(summaryData, trends)
+                upcoming.value = upcomingRes.data.data
             } catch (error) {
                 notifyError('Erro ao carregar dados do painel!')
             } finally {
@@ -333,6 +321,8 @@ export default defineComponent({
         return {
             loading,
             statTiles,
+            upcoming,
+            UPCOMING_DAYS,
             statusChartSeries,
             statusChartOptions,
             speciesChartSeries,
