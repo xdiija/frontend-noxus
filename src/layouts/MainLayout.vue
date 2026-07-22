@@ -13,10 +13,11 @@
 					<q-tooltip class="bg-primary">Menus</q-tooltip>
                 </q-btn>
         		<q-space />
-				<q-toolbar-title>
-					Noxus Sistemas
+				<q-toolbar-title class="row items-center no-wrap">
+					AbrigoHub <q-icon name="pets" class="q-ml-xs"/>
 				</q-toolbar-title>
         		<q-space />
+				<div v-if="user?.name" class="q-mr-sm gt-xs">{{ user.name }}</div>
 				<q-btn
 					flat
 					dense

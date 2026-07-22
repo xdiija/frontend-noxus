@@ -1,4 +1,4 @@
-# Noxus (front-end)
+# AbrigoHub (front-end)
 
 Sistema Gerenciador
 

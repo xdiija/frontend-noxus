@@ -196,10 +196,7 @@
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import kennelsService from 'src/services/kennelsService'
-import kennelStatusesService from 'src/services/kennelStatusesService'
 import kennelStaysService from 'src/services/kennelStaysService'
-import animalSizesService from 'src/services/animalSizesService'
-import animalsService from 'src/services/animalsService'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
@@ -236,10 +233,7 @@ export default defineComponent({
         const $q = useQuasar()
         const router = useRouter()
         const route = useRoute()
-        const { post, getByID, update, list: listKennels } = kennelsService()
-        const { list: listStatuses } = kennelStatusesService()
-        const { list: listSizes } = animalSizesService()
-        const { list: listAnimals } = animalsService()
+        const { post, getByID, update, list: listKennels, getFormOptions, listAnimalOptions } = kennelsService()
         const { notifySuccess, notifyError } = notifications()
 
         const form = ref({
@@ -261,8 +255,7 @@ export default defineComponent({
         headerProps.title = isEditMode.value ? 'Editar Canil' : 'Cadastrar Canil'
 
         onMounted(async () => {
-            await loadStatuses()
-            loadSizes()
+            await loadOptions()
             if (route.params.id) {
                 await Promise.all([
                     getKennel(route.params.id),
@@ -272,25 +265,19 @@ export default defineComponent({
             }
         })
 
-        const loadStatuses = async () => {
+        // Statuses + sizes come from /kennels/form-options (kennels
+        // permission), so the form doesn't depend on the lookup menu grants.
+        const loadOptions = async () => {
             try {
-                const { data } = await listStatuses()
-                statusOptions.value = data.data
+                const { data } = await getFormOptions()
+                statusOptions.value = data.data.statuses
+                sizeOptions.value = data.data.sizes
                 // Preselect the system default ("Disponível") on create.
                 if (!isEditMode.value && form.value.status_id === null) {
-                    form.value.status_id = data.data.find(s => s.is_default)?.id ?? null
+                    form.value.status_id = data.data.statuses.find(s => s.is_default)?.id ?? null
                 }
             } catch (error) {
-                notifyError('Erro ao carregar status de canil!')
-            }
-        }
-
-        const loadSizes = async () => {
-            try {
-                const { data } = await listSizes()
-                sizeOptions.value = data.data
-            } catch (error) {
-                sizeOptions.value = []
+                notifyError('Erro ao carregar opções do formulário!')
             }
         }
 
@@ -323,8 +310,10 @@ export default defineComponent({
             }
         }
 
+        // Slim picker from /kennels/animal-options (kennels permission), so
+        // the stay dialog doesn't depend on the animals menu grant.
         const loadAnimals = async (val) => {
-            const { data } = await listAnimals('', { filter: val, per_page: 20 })
+            const { data } = await listAnimalOptions(val)
             animalOptions.value = data.data
         }
 

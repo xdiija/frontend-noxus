@@ -209,8 +209,6 @@
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import adoptionsService from 'src/services/adoptionsService'
-import adoptersService from 'src/services/adoptersService'
-import animalsService from 'src/services/animalsService'
 import adoptionStatusesService from 'src/services/adoptionStatusesService'
 import adoptionFollowUpStatusesService from 'src/services/adoptionFollowUpStatusesService'
 import adoptionFollowUpsService from 'src/services/adoptionFollowUpsService'
@@ -249,9 +247,7 @@ export default defineComponent({
         const $q = useQuasar()
         const router = useRouter()
         const route = useRoute()
-        const { post, getByID, update } = adoptionsService()
-        const { list: listAdopters } = adoptersService()
-        const { list: listAnimals } = animalsService()
+        const { post, getByID, update, listAnimalOptions, listAdopterOptions } = adoptionsService()
         const { list: listStatuses } = adoptionStatusesService()
         const { list: listFollowUpStatuses } = adoptionFollowUpStatusesService()
         const { notifySuccess, notifyError } = notifications()
@@ -297,13 +293,15 @@ export default defineComponent({
             followUpStatusOptions.value = data.data
         }
 
+        // Slim pickers from /adoptions/*-options (adoptions permission), so
+        // the form doesn't depend on the animals/adopters menu grants.
         const loadAnimals = async (val) => {
-            const { data } = await listAnimals('', { filter: val, per_page: 20 })
+            const { data } = await listAnimalOptions(val)
             animalOptions.value = data.data
         }
 
         const loadAdopters = async (val) => {
-            const { data } = await listAdopters('', { filter: val, per_page: 20 })
+            const { data } = await listAdopterOptions(val)
             adopterOptions.value = data.data
         }
 

@@ -7,6 +7,33 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="canCreate('breeds') ? headerProps.btnName : ''"
         />
+        <q-form class="row q-col-gutter-sm q-mb-md">
+            <q-select
+                dense
+                v-model="speciesFilter"
+                :options="speciesOptions"
+                option-value="id"
+                option-label="name"
+                emit-value
+                map-options
+                label="Espécie"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="getBreeds"
+            />
+            <q-space />
+            <q-input
+                dense
+                debounce="300"
+                v-model="filter"
+                placeholder="Busca"
+                class="col-sm-3 col-xs-12"
+            >
+                <template v-slot:append>
+                    <q-icon name="search" />
+                </template>
+            </q-input>
+        </q-form>
+
         <q-table
             :rows="rows"
             :columns="columns"
@@ -15,28 +42,6 @@
             :loading="loading"
             :rows-per-page-options="[10, 20, 50]"
         >
-            <template v-slot:top-right>
-                <q-select
-                    dense
-                    outlined
-                    class="q-mr-sm"
-                    style="min-width: 180px"
-                    v-model="speciesFilter"
-                    :options="speciesOptions"
-                    option-value="id"
-                    option-label="name"
-                    emit-value
-                    map-options
-                    clearable
-                    label="Espécie"
-                    @update:model-value="getBreeds"
-                />
-                <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-            </template>
             <template v-slot:body-cell-actions="props">
                 <q-td :props="props" class="q-gutter-sm">
                     <template v-if="canUpdate('breeds')">
@@ -119,7 +124,8 @@ export default defineComponent({
         const getSpecies = async () => {
             try {
                 const { data } = await listSpecies()
-                speciesOptions.value = data.data
+                // id null = no filter; map-options resolves it to the "Todas" label.
+                speciesOptions.value = [{ id: null, name: 'Todas' }, ...data.data]
             } catch (error) {
                 console.error('Erro na requisição:', error)
             }

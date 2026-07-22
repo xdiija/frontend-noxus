@@ -2,6 +2,41 @@
     <div class="q-pa-md">
         <router-view />
         <ViewHeader :title="headerProps.title" />
+        <q-form class="row q-col-gutter-sm q-mb-md">
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="entityFilter"
+                :options="entityOptions"
+                label="Entidade"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onFilterChange"
+            />
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="actionFilter"
+                :options="actionOptions"
+                label="Ação"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onFilterChange"
+            />
+            <q-space />
+            <q-input
+                dense
+                debounce="300"
+                v-model="filter"
+                placeholder="Busca"
+                class="col-sm-3 col-xs-12"
+            >
+                <template v-slot:append>
+                    <q-icon name="search" />
+                </template>
+            </q-input>
+        </q-form>
+
         <q-table
             :rows="rows"
             :columns="columns"
@@ -12,39 +47,6 @@
             :rows-per-page-options="[5, 10, 20]"
             @request="onRequest"
         >
-            <template v-slot:top-right>
-                <q-select
-                    dense
-                    outlined
-                    clearable
-                    emit-value
-                    map-options
-                    v-model="entityFilter"
-                    :options="entityOptions"
-                    label="Entidade"
-                    class="q-mr-sm"
-                    style="min-width: 150px"
-                    @update:model-value="onFilterChange"
-                />
-                <q-select
-                    dense
-                    outlined
-                    clearable
-                    emit-value
-                    map-options
-                    v-model="actionFilter"
-                    :options="actionOptions"
-                    label="Ação"
-                    class="q-mr-sm"
-                    style="min-width: 140px"
-                    @update:model-value="onFilterChange"
-                />
-                <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-            </template>
             <template v-slot:body-cell-action="props">
                 <q-td :props="props">
                     <q-chip
@@ -105,10 +107,14 @@ export default defineComponent({
             rowsNumber: 0
         })
 
-        const entityOptions = Object.entries(ENTITY_LABELS)
-            .map(([value, label]) => ({ value, label }))
+        // value null = no filter; map-options resolves it to the "Todas" label.
+        const entityOptions = [
+            { value: null, label: 'Todas' },
+            ...Object.entries(ENTITY_LABELS).map(([value, label]) => ({ value, label }))
+        ]
 
         const actionOptions = [
+            { value: null, label: 'Todas' },
             { value: 'created', label: 'Criação' },
             { value: 'updated', label: 'Atualização' },
             { value: 'deleted', label: 'Exclusão' }

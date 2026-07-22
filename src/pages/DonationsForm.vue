@@ -117,7 +117,6 @@
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import donationsService from 'src/services/donationsService'
-import donorsService from 'src/services/donorsService'
 import donationTypesService from 'src/services/donationTypesService'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
@@ -144,8 +143,7 @@ export default defineComponent({
         const { phoneMask, unMask } = mask()
         const { formatBRL, maskCurrency } = currency()
         const { convertToDbFormat } = dateHelper()
-        const { post, getByID, update } = donationsService()
-        const { list: listDonors } = donorsService()
+        const { post, getByID, update, listDonorOptions } = donationsService()
         const { list: listTypes } = donationTypesService()
         const { notifySuccess, notifyError } = notifications()
 
@@ -178,8 +176,10 @@ export default defineComponent({
             typeOptions.value = data.data
         }
 
+        // Slim picker from /donations/donor-options (donations permission),
+        // so the form doesn't depend on the donors menu grant.
         const loadDonors = async (val) => {
-            const { data } = await listDonors('', { filter: val, per_page: 20 })
+            const { data } = await listDonorOptions(val)
             donorOptions.value = data.data
         }
 

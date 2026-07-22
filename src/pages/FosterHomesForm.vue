@@ -159,7 +159,6 @@
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import fosterHomesService from 'src/services/fosterHomesService'
 import fosterPlacementsService from 'src/services/fosterPlacementsService'
-import animalsService from 'src/services/animalsService'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
@@ -196,8 +195,7 @@ export default defineComponent({
         const router = useRouter()
         const route = useRoute()
         const { phoneMask, unMask } = mask()
-        const { post, getByID, update } = fosterHomesService()
-        const { list: listAnimals } = animalsService()
+        const { post, getByID, update, listAnimalOptions } = fosterHomesService()
         const { notifySuccess, notifyError } = notifications()
 
         const form = ref({
@@ -253,8 +251,10 @@ export default defineComponent({
             }
         }
 
+        // Slim picker from /foster-homes/animal-options (foster-homes
+        // permission), so the dialog doesn't depend on the animals menu grant.
         const loadAnimals = async (val) => {
-            const { data } = await listAnimals('', { filter: val, per_page: 20 })
+            const { data } = await listAnimalOptions(val)
             animalOptions.value = data.data
         }
 

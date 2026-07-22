@@ -1,6 +1,11 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="text-h6 q-mb-md">Painel do Abrigo</div>
+    <div class="q-mb-md">
+      <div class="text-h6">Painel do Abrigo</div>
+      <div v-if="user?.organization?.name" class="text-subtitle2 text-grey-7">
+        {{ user.organization.name }}
+      </div>
+    </div>
 
     <div v-if="loading" class="row justify-center q-pa-xl">
       <q-spinner color="primary" size="3em" />

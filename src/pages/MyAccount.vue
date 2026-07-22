@@ -1,11 +1,6 @@
 <template>
     <div class="q-pa-md">
-    <ViewHeader
-        :title="headerProps.title"
-        :btnTo="headerProps.btnTo"
-        :btnIcon="headerProps.btnIcon"
-        :btnName="headerProps.btnName"
-    />
+    <ViewHeader :title="headerProps.title" />
         <q-form
             @submit="onSubmit"
             class="row q-col-gutter-sm"
@@ -14,43 +9,22 @@
                 outlined
                 v-model="form.name"
                 label="Nome"
-                lazy-rules
                 readonly
-                class="col-md-6 col-xs-12"
-                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
+                class="col-md-4 col-xs-12"
             />
             <q-input
                 outlined
                 v-model="form.email"
                 label="Email"
                 readonly
-                lazy-rules
-                class="col-md-6 col-xs-12"
-                :rules="[ val => val && val.length > 0 || 'Campo Obrigatório!']"
+                class="col-md-4 col-xs-12"
             />
-            <q-select
-                label="Perfil"
-                class="col-md-6 col-xs-12"
+            <q-input
                 outlined
-                readonly
                 v-model="form.role"
-                :options="roles"
-                option-label="name"
-                option-value="id"
-                emit-value
-                map-options
-                :rules="[val => !!val || 'Campo Obrigatório!']"
-            />
-            <q-select
-                label="Status"
-                class="col-md-6 col-xs-12"
-                outlined
+                label="Perfil"
                 readonly
-                v-model="form.status"
-                :options="activeInactive"
-                emit-value
-                map-options
-                :rules="[val => !!val || 'Campo Obrigatório!']"
+                class="col-md-4 col-xs-12"
             />
             <q-input
                 outlined
@@ -128,39 +102,31 @@
 </template>
 
 <script>
-import { defineComponent, ref, onMounted, computed } from 'vue'
+import { defineComponent, ref, onMounted } from 'vue'
 import usersService from 'src/services/usersService'
-import rolesService from 'src/services/rolesService'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import notifications from '../utils/notifications'
-import { activeInactive } from 'src/constants/statusOptions';
 
 const headerProps = {
-    title: 'Minha Conta',
-    btnIcon: 'format_list_numbered',
-    btnTo: 'users'
+    title: 'Minha Conta'
 }
 
 export default defineComponent({
-    name: 'UsersForm',
+    name: 'MyAccount',
     components: { ViewHeader },
     props: {
-        user: { type: Object, required: true}
+        user: { type: Object, required: true }
     },
 
-    
     setup (props) {
         const router = useRouter()
-        const route = useRoute()
-        const { getByID, update } = usersService()
+        const { update } = usersService()
         const { notifySuccess, notifyError } = notifications()
 
-        const roles = ref([])
         const form = ref({
             isPwd: true,
             name: null,
-            status: null,
             role: null,
             email: null,
             old_password: null,
@@ -168,70 +134,41 @@ export default defineComponent({
             password_confirm: null
         })
 
-        const isEditMode = true;
+        const passwordRules = [
+            val => !!val || 'Campo Obrigatório!',
+            val => val.length >= 6 || 'A senha deve ter pelo menos 6 caracteres'
+        ]
 
-        const passwordRules = computed(() => [
-            val => isEditMode || (val && val.length > 0) || 'Campo Obrigatório!',
-            val => (isEditMode && !val) || val.length >= 6 || 'A senha deve ter pelo menos 6 caracteres'
-        ])
+        const passwordConfirmRules = [
+            val => (val && val === form.value.password) || 'As senhas não coincidem'
+        ]
 
-        const passwordConfirmRules = computed(() => [
-            val => {
-                if (!isEditMode || form.value.password) {
-                    return (val && val === form.value.password) || 'As senhas não coincidem'
-                }
-                return true
-            }
-        ])
-
-        onMounted(async () => {
-            await getRoles()
-            await getUser(props.user.id)
-
+        // Profile data comes from the auth/me payload passed down by
+        // MainLayout — no users,view permission is required for this page.
+        onMounted(() => {
+            form.value.name = props.user.name
+            form.value.email = props.user.email
+            form.value.role = props.user.role?.name ?? ''
         })
-
-        const getRoles = async () => {
-            try {
-                const { list } = rolesService()
-                const { data } = await list("/getactive")
-                roles.value = data.data
-            } catch (error) {
-                notifyError(error.response.data.message)
-            }
-        }
-
-        const getUser = async (id) => {
-            try {
-                const { data } = await getByID(id)
-                const userData = data.data;
-                userData.status = userData.status?.id
-                Object.assign(form.value, userData)
-                form.value.role = userData.role?.id ?? null
-            } catch (error) {
-                notifyError(error.response.data.message)
-                router.push({ name: 'users' })
-            }
-        }
 
         const updateUser = async () => {
             try {
-                const idAndEndPoint = `${form.value.id}/change-password`;
+                const idAndEndPoint = `${props.user.id}/change-password`
                 await update(makePayload(), idAndEndPoint)
-                notifySuccess('Usuário atualizado com sucesso!')
-                router.push({ name: 'users' })
+                notifySuccess('Senha alterada com sucesso!')
+                router.push({ name: 'home' })
             } catch (error) {
-                console.log(error);
-                Object.keys(error.response.data.errors).forEach(key => {
-                    notifyError(error.response.data.errors[key])
-                })
+                const errors = error.response?.data?.errors
+                if (errors) Object.keys(errors).forEach(key => notifyError(errors[key]))
+                else notifyError(error.response?.data?.message || 'Erro ao alterar a senha!')
             }
         }
 
-        const makePayload = () => {                      
+        const makePayload = () => {
             const payload = {
                 old_password: form.value.old_password,
                 new_password: form.value.password
-            }            
+            }
             return payload
         }
 
@@ -244,9 +181,7 @@ export default defineComponent({
             onSubmit,
             headerProps,
             passwordRules,
-            passwordConfirmRules,
-            roles,
-            activeInactive
+            passwordConfirmRules
         }
     }
 })

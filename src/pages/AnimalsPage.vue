@@ -7,6 +7,66 @@
             :btnIcon="headerProps.btnIcon"
             :btnName="canCreate('animals') ? headerProps.btnName : ''"
         />
+        <q-tabs
+            v-model="speciesTab"
+            align="left"
+            class="bg-white text-primary q-mb-md"
+            inline-label
+            @update:model-value="onFilterChange"
+        >
+            <q-tab name="all" label="Todas" />
+            <q-tab
+                v-for="option in speciesOptions"
+                :key="option.id"
+                :name="option.id"
+                :label="option.name"
+            />
+        </q-tabs>
+
+        <q-form class="row q-col-gutter-sm q-mb-md">
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="sexFilter"
+                :options="sexFilterOptions"
+                label="Sexo"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onFilterChange"
+            />
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="sizeFilter"
+                :options="sizeFilterOptions"
+                label="Porte"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onFilterChange"
+            />
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="statusFilter"
+                :options="statusFilterOptions"
+                label="Status"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onFilterChange"
+            />
+            <q-input
+                dense
+                debounce="300"
+                v-model="filter"
+                placeholder="Busca"
+                class="col-md-3 col-xs-12"
+            >
+                <template v-slot:append>
+                    <q-icon name="search" />
+                </template>
+            </q-input>
+        </q-form>
+
         <q-table
             :rows="rows"
             :columns="columns"
@@ -17,12 +77,10 @@
             :rows-per-page-options="[5, 10, 20]"
             @request="onRequest"
         >
-            <template v-slot:top-right>
-                <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
+            <template v-slot:body-cell-name="props">
+                <q-td :props="props">
+                    <a class="name-link" @click="openGallery(props.row)">{{ props.value }}</a>
+                </q-td>
             </template>
             <template v-slot:body-cell-status="props">
                 <q-td :props="props">
@@ -74,11 +132,11 @@
 <script>
 import { defineComponent, ref, onMounted } from 'vue'
 import animalsService from 'src/services/animalsService'
-import animalStatusesService from 'src/services/animalStatusesService'
 import { useQuasar } from 'quasar'
 import { useRouter } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
 import SelectNotesDialog from 'components/SelectNotesDialog.vue'
+import AnimalGalleryDialog from 'components/AnimalGalleryDialog.vue'
 import notifications from '../utils/notifications'
 import usePermissions from 'src/composables/usePermissions'
 
@@ -105,9 +163,25 @@ export default defineComponent({
             rowsPerPage: 10,
             rowsNumber: 0
         })
-        const { list, changeStatus, destroy } = animalsService()
-        const { list: listStatuses } = animalStatusesService()
+        const { list, getFormOptions, changeStatus, destroy } = animalsService()
         const { canUpdate, canCreate } = usePermissions()
+
+        // 'all' is the species tab's own sentinel (a q-tab name can't be
+        // null); the selects use null directly, resolved by map-options to
+        // the "Todos" label.
+        const speciesTab = ref('all')
+        const statusFilter = ref(null)
+        const sexFilter = ref(null)
+        const sizeFilter = ref(null)
+
+        const speciesOptions = ref([])
+        const statusFilterOptions = ref([{ value: null, label: 'Todos' }])
+        const sizeFilterOptions = ref([{ value: null, label: 'Todos' }])
+        const sexFilterOptions = [
+            { value: null, label: 'Todos' },
+            { value: 'M', label: 'Macho' },
+            { value: 'F', label: 'Fêmea' }
+        ]
 
         const formatAge = (age) => {
             if (!age) return '—'
@@ -142,7 +216,11 @@ export default defineComponent({
                 const params = {
                     page: pagination.value.page,
                     per_page: pagination.value.rowsPerPage,
-                    filter: filter.value
+                    filter: filter.value,
+                    species_id: speciesTab.value === 'all' ? null : speciesTab.value,
+                    status_id: statusFilter.value,
+                    sex: sexFilter.value,
+                    size_id: sizeFilter.value
                 }
                 const { data } = await list('', params)
                 rows.value = data.data
@@ -154,17 +232,37 @@ export default defineComponent({
             }
         }
 
-        const getStatuses = async () => {
+        // Comes from /animals/form-options (animals,view permission), so this
+        // page never depends on the species/animal-sizes/animal-statuses
+        // lookup grants. Drives the species tabs, the status/size filters and
+        // the change-status dialog's status select.
+        const getFilterOptions = async () => {
             try {
-                const { data } = await listStatuses()
-                statusOptions.value = data.data.map(s => ({ label: s.name, value: s.id }))
+                const { data } = await getFormOptions()
+                speciesOptions.value = data.data.species
+                statusFilterOptions.value = [
+                    { value: null, label: 'Todos' },
+                    ...data.data.statuses.map(s => ({ value: s.id, label: s.name }))
+                ]
+                sizeFilterOptions.value = [
+                    { value: null, label: 'Todos' },
+                    ...data.data.sizes.map(s => ({ value: s.id, label: s.name }))
+                ]
+                statusOptions.value = data.data.statuses.map(s => ({ label: s.name, value: s.id }))
             } catch (error) {
-                console.error('Erro ao carregar status:', error)
+                console.error('Erro ao carregar opções de filtro:', error)
             }
         }
 
+        // The selects live outside the q-table :filter binding, so reset the
+        // page and refetch manually when one changes.
+        const onFilterChange = () => {
+            pagination.value.page = 1
+            getAnimals()
+        }
+
         onMounted(() => {
-            getStatuses()
+            getFilterOptions()
             getAnimals()
         })
 
@@ -186,6 +284,16 @@ export default defineComponent({
                     await getAnimals()
                 } catch (error) {
                     notifyError('Erro ao alterar status do animal.')
+                }
+            })
+        }
+
+        const openGallery = (row) => {
+            $q.dialog({
+                component: AnimalGalleryDialog,
+                componentProps: {
+                    animalId: row.id,
+                    animalName: row.name
                 }
             })
         }
@@ -221,12 +329,33 @@ export default defineComponent({
             pagination,
             chipStyle,
             onRequest,
+            openGallery,
             handleChangeStatus,
             handleEdit,
             handleDestroy,
             canUpdate,
-            canCreate
+            canCreate,
+            speciesTab,
+            speciesOptions,
+            statusFilter,
+            sexFilter,
+            sizeFilter,
+            statusFilterOptions,
+            sizeFilterOptions,
+            sexFilterOptions,
+            onFilterChange
         }
     }
 })
 </script>
+
+<style scoped>
+.name-link {
+    color: var(--q-primary);
+    cursor: pointer;
+    text-decoration: none;
+}
+.name-link:hover {
+    text-decoration: underline;
+}
+</style>

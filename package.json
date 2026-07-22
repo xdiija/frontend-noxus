@@ -1,8 +1,8 @@
 {
     "name": "front-end",
     "version": "0.0.1",
-    "description": "Sistema Gerenciador",
-    "productName": "Noxus",
+    "description": "Sistema Gerenciador de Abrigos",
+    "productName": "AbrigoHub",
     "author": "Djalma Leandro <djalmaleandro@yahoo.com>",
     "private": true,
     "scripts": {

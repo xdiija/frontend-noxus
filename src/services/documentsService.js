@@ -20,5 +20,9 @@ export default function documentsService() {
         })
     }
 
-    return { list, upload, update, destroy }
+    // Slim {id, name} owner picker gated by the documents permission, so the
+    // upload dialog works without the owner resources' menu grants.
+    const listOwnerOptions = (type, filter = '') => list('/owner-options', { type, filter })
+
+    return { list, upload, update, destroy, listOwnerOptions }
 }

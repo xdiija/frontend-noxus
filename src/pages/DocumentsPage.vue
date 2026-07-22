@@ -8,6 +8,31 @@
             customClick
             @custom-click="openUploadDialog"
         />
+        <q-form class="row q-col-gutter-sm q-mb-md">
+            <q-select
+                dense
+                emit-value
+                map-options
+                v-model="ownerTypeFilter"
+                :options="ownerTypeFilterOptions"
+                label="Vínculo"
+                class="col-sm-3 col-xs-12"
+                @update:model-value="onOwnerFilterChange"
+            />
+            <q-space />
+            <q-input
+                dense
+                debounce="300"
+                v-model="filter"
+                placeholder="Busca"
+                class="col-sm-3 col-xs-12"
+            >
+                <template v-slot:append>
+                    <q-icon name="search" />
+                </template>
+            </q-input>
+        </q-form>
+
         <q-table
             :rows="rows"
             :columns="columns"
@@ -18,26 +43,6 @@
             :rows-per-page-options="[5, 10, 20]"
             @request="onRequest"
         >
-            <template v-slot:top-right>
-                <q-select
-                    dense
-                    outlined
-                    clearable
-                    emit-value
-                    map-options
-                    v-model="ownerTypeFilter"
-                    :options="ownerTypeOptions"
-                    label="Vínculo"
-                    class="q-mr-sm"
-                    style="min-width: 160px"
-                    @update:model-value="onOwnerFilterChange"
-                />
-                <q-input dense debounce="300" v-model="filter" placeholder="Busca">
-                    <template v-slot:append>
-                        <q-icon name="search" />
-                    </template>
-                </q-input>
-            </template>
             <template v-slot:body-cell-documentable="props">
                 <q-td :props="props">
                     <template v-if="props.row.documentable">
@@ -172,11 +177,6 @@ import { defineComponent, ref, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 import ViewHeader from 'components/ViewHeader.vue'
 import documentsService from 'src/services/documentsService'
-import animalsService from 'src/services/animalsService'
-import adoptersService from 'src/services/adoptersService'
-import adoptionsService from 'src/services/adoptionsService'
-import volunteersService from 'src/services/volunteersService'
-import fosterHomesService from 'src/services/fosterHomesService'
 import notifications from '../utils/notifications'
 import usePermissions from 'src/composables/usePermissions'
 
@@ -195,6 +195,13 @@ const OWNER_TYPES = [
     { value: 'foster_home', label: 'Lar Temporário' }
 ]
 
+// Filter-only variant: value null = no filter, shown as "Todos". The upload
+// dialog keeps OWNER_TYPES, where empty means an organization document.
+const OWNER_TYPE_FILTER_OPTIONS = [
+    { value: null, label: 'Todos' },
+    ...OWNER_TYPES
+]
+
 export default defineComponent({
     name: 'DocumentsPage',
     components: { ViewHeader },
@@ -202,7 +209,7 @@ export default defineComponent({
         const $q = useQuasar()
         const { notifySuccess, notifyError } = notifications()
         const { canCreate, canUpdate } = usePermissions()
-        const { list, upload, update, destroy } = documentsService()
+        const { list, upload, update, destroy, listOwnerOptions } = documentsService()
 
         const rows = ref([])
         const filter = ref('')
@@ -275,43 +282,20 @@ export default defineComponent({
             ownerOptions.value = []
         }
 
-        // One search function per owner kind, mapped to the option label the
-        // select shows. Adoptions have no name: label by id + animal/adopter.
-        const ownerSearchers = {
-            animal: async (val) => {
-                const { data } = await animalsService().list('', { filter: val, per_page: 20 })
-                return data.data.map(row => ({ id: row.id, label: row.name }))
-            },
-            adopter: async (val) => {
-                const { data } = await adoptersService().list('', { filter: val, per_page: 20 })
-                return data.data.map(row => ({ id: row.id, label: row.name }))
-            },
-            adoption: async (val) => {
-                const { data } = await adoptionsService().list('', { filter: val, per_page: 20 })
-                return data.data.map(row => ({
-                    id: row.id,
-                    label: `#${row.id} — ${row.animal?.name || 'animal'} / ${row.adopter?.name || 'adotante'}`
-                }))
-            },
-            volunteer: async (val) => {
-                const { data } = await volunteersService().list('', { filter: val, per_page: 20 })
-                return data.data.map(row => ({ id: row.id, label: row.name }))
-            },
-            foster_home: async (val) => {
-                const { data } = await fosterHomesService().list('', { filter: val, per_page: 20 })
-                return data.data.map(row => ({ id: row.id, label: row.name }))
-            }
-        }
-
+        // Owner rows come from /documents/owner-options (documents
+        // permission), so the dialog doesn't depend on the owner resources'
+        // own menu grants. The backend labels adoptions "#id — animal /
+        // adotante" like the old per-service searchers did.
         const filterOwners = (val, update) => {
             update(async () => {
-                const search = ownerSearchers[uploadForm.value.documentableType]
-                if (!search) {
+                const type = uploadForm.value.documentableType
+                if (!type) {
                     ownerOptions.value = []
                     return
                 }
                 try {
-                    ownerOptions.value = await search(val)
+                    const { data } = await listOwnerOptions(type, val)
+                    ownerOptions.value = data.data.map(row => ({ id: row.id, label: row.name }))
                 } catch (error) {
                     ownerOptions.value = []
                 }
@@ -392,6 +376,7 @@ export default defineComponent({
             filter,
             ownerTypeFilter,
             ownerTypeOptions: OWNER_TYPES,
+            ownerTypeFilterOptions: OWNER_TYPE_FILTER_OPTIONS,
             ownerTypeLabel,
             loading,
             pagination,

@@ -292,6 +292,19 @@
                 </q-card-section>
             </q-card>
 
+            <!-- Health (Module 4) — only in edit mode (records need a saved animal id) -->
+            <AnimalHealthSection
+                v-if="isEditMode"
+                :animal-id="$route.params.id"
+                @castration="onCastration"
+            />
+
+            <!-- Status history — only in edit mode (log needs a saved animal id) -->
+            <AnimalStatusHistorySection
+                v-if="isEditMode"
+                :animal-id="$route.params.id"
+            />
+
             <div class="col-lg-12 col-xs-12 q-mt-md">
                 <q-btn label="Salvar" type="submit" class="float-right" color="primary" icon="save" />
                 <q-btn
@@ -330,15 +343,12 @@
 <script>
 import { defineComponent, ref, computed, onMounted } from 'vue'
 import animalsService from 'src/services/animalsService'
-import speciesService from 'src/services/speciesService'
-import breedsService from 'src/services/breedsService'
-import animalSizesService from 'src/services/animalSizesService'
-import animalStatusesService from 'src/services/animalStatusesService'
-import tagsService from 'src/services/tagsService'
 import animalImagesService from 'src/services/animalImagesService'
 import { useQuasar } from 'quasar'
 import { useRouter, useRoute } from 'vue-router'
 import ViewHeader from 'components/ViewHeader.vue'
+import AnimalHealthSection from 'components/AnimalHealthSection.vue'
+import AnimalStatusHistorySection from 'components/AnimalStatusHistorySection.vue'
 import notifications from '../utils/notifications'
 
 const listRoute = 'animals'
@@ -388,17 +398,12 @@ const emptyRescue = () => ({
 
 export default defineComponent({
     name: 'AnimalsForm',
-    components: { ViewHeader },
+    components: { ViewHeader, AnimalHealthSection, AnimalStatusHistorySection },
     setup () {
         const $q = useQuasar()
         const router = useRouter()
         const route = useRoute()
-        const { post, getByID, update } = animalsService()
-        const { list: listSpecies } = speciesService()
-        const { list: listBreeds } = breedsService()
-        const { list: listSizes } = animalSizesService()
-        const { list: listStatuses } = animalStatusesService()
-        const { list: listTags } = tagsService()
+        const { post, getByID, update, getFormOptions } = animalsService()
         const { upload: uploadImageApi, destroy: destroyImageApi } = animalImagesService()
         const { notifySuccess, notifyError } = notifications()
 
@@ -421,7 +426,12 @@ export default defineComponent({
         })
 
         const speciesOptions = ref([])
-        const breedOptions = ref([])
+        const allBreeds = ref([])
+        // Breeds come bundled in form-options with their species_id; the
+        // cascade is just a client-side filter.
+        const breedOptions = computed(() =>
+            allBreeds.value.filter(b => b.species_id === form.value.species_id)
+        )
         const sizeOptions = ref([])
         const statusOptions = ref([])
         const tagOptions = ref([])
@@ -446,52 +456,31 @@ export default defineComponent({
         headerProps.title = isEditMode.value ? 'Editar Animal' : 'Cadastrar Animal'
 
         onMounted(async () => {
-            await Promise.all([getSpecies(), getSizes(), getStatuses(), getTags()])
+            await getOptions()
             if (route.params.id) {
                 await getAnimal(route.params.id)
             }
         })
 
-        const getSpecies = async () => {
-            const { data } = await listSpecies()
-            speciesOptions.value = data.data
+        // All the global lookups come from /animals/form-options (animals
+        // permission), so the form doesn't depend on the per-lookup grants.
+        const getOptions = async () => {
+            const { data } = await getFormOptions()
+            speciesOptions.value = data.data.species
+            allBreeds.value = data.data.breeds
+            sizeOptions.value = data.data.sizes
+            statusOptions.value = data.data.statuses
+            tagOptions.value = data.data.tags
         }
 
-        const getBreeds = async (speciesId) => {
-            if (!speciesId) {
-                breedOptions.value = []
-                return
-            }
-            const { data } = await listBreeds('', { species_id: speciesId })
-            breedOptions.value = data.data
-        }
-
-        const getSizes = async () => {
-            const { data } = await listSizes()
-            sizeOptions.value = data.data
-        }
-
-        const getStatuses = async () => {
-            const { data } = await listStatuses()
-            statusOptions.value = data.data
-        }
-
-        const getTags = async () => {
-            const { data } = await listTags()
-            tagOptions.value = data.data
-        }
-
-        const onSpeciesChange = async (speciesId) => {
+        const onSpeciesChange = () => {
             form.value.breed_id = null
-            await getBreeds(speciesId)
         }
 
         const getAnimal = async (id) => {
             try {
                 const { data } = await getByID(id)
                 const animal = data.data
-
-                await getBreeds(animal.species?.id)
 
                 form.value = {
                     id: animal.id,
@@ -545,6 +534,13 @@ export default defineComponent({
                 uploadingImage.value = false
                 newImage.value = null
             }
+        }
+
+        // A castration surgery marks the animal as neutered server-side; mirror
+        // it locally so the form doesn't overwrite it back on save.
+        const onCastration = (surgeryDate) => {
+            form.value.neutered = true
+            form.value.neuter_date = surgeryDate
         }
 
         const removeImage = (imageId) => {
@@ -648,6 +644,7 @@ export default defineComponent({
             openPreview,
             uploadImage,
             removeImage,
+            onCastration,
             onSpeciesChange,
             onSubmit,
             headerProps,

@@ -10,6 +10,11 @@ export default function adoptionsService() {
     const returnAdoption = (id, reqData) => api.put(`adoptions/${id}/return`, reqData)
     const cancelAdoption = (id, reqData) => api.put(`adoptions/${id}/cancel`, reqData)
 
+    // Slim {id, name} pickers gated by the adoptions permission, so the form
+    // works without the animals/adopters menu grants.
+    const listAnimalOptions = (filter = '') => list('/animal-options', { filter })
+    const listAdopterOptions = (filter = '') => list('/adopter-options', { filter })
+
     return {
         list,
         getByID,
@@ -17,6 +22,8 @@ export default function adoptionsService() {
         update,
         destroy,
         returnAdoption,
-        cancelAdoption
+        cancelAdoption,
+        listAnimalOptions,
+        listAdopterOptions
     }
 }
